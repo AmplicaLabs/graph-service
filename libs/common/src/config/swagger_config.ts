@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as fs from 'fs';
+import metadata from '../../../../apps/api/src/metadata';
 
 export const initSwagger = async (app: INestApplication, apiPath: string) => {
   const options = new DocumentBuilder()
@@ -13,9 +14,12 @@ export const initSwagger = async (app: INestApplication, apiPath: string) => {
     })
     .addCookieAuth('SESSION')
     .build();
+  await SwaggerModule.loadPluginMetadata(metadata);
+
   const document = SwaggerModule.createDocument(app, options, {
     extraModels: [],
   });
+
   // write swagger.json to disk
   fs.writeFileSync('./swagger.json', JSON.stringify(document));
   SwaggerModule.setup(apiPath, app, document);

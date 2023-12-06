@@ -14,7 +14,19 @@ paths:
     get:
       operationId: ApiController_getGraphs
       summary: Fetch graphs for specified dsnpIds and blockNumber
-      parameters: []
+      parameters:
+        - name: dsnpIds
+          required: true
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        - name: blockNumber
+          required: false
+          in: query
+          schema:
+            type: string
       responses:
         '200':
           description: Graphs retrieved successfully
@@ -71,9 +83,83 @@ components:
       in: cookie
       name: SESSION
   schemas:
+    ConnectionDto:
+      type: object
+      properties:
+        dsnpId:
+          type: string
+        privacyType:
+          type: string
+          enum:
+            - private
+            - public
+        direction:
+          type: string
+          enum:
+            - connectionTo
+            - connectionFrom
+            - bidirectional
+        connectionType:
+          type: string
+          enum:
+            - follow
+            - friendship
+      required:
+        - dsnpId
+        - privacyType
+        - direction
+        - connectionType
+    GraphKeyPairDto:
+      type: object
+      properties:
+        publicKey:
+          type: string
+        privateKey:
+          type: string
+        keyType:
+          type: string
+          enum:
+            - X25519
+      required:
+        - publicKey
+        - privateKey
+        - keyType
     ProviderGraphDto:
       type: object
-      properties: {}
+      properties:
+        dsnpId:
+          type: string
+        privacyType:
+          type: string
+          enum:
+            - private
+            - public
+        connections:
+          type: object
+          properties:
+            data:
+              required: true
+              type: array
+              items:
+                $ref: '#/components/schemas/ConnectionDto'
+        graphKeyPairs:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphKeyPairDto'
+      required:
+        - dsnpId
+        - privacyType
+        - connections
+        - graphKeyPairs
     WatchGraphsDto:
       type: object
-      properties: {}
+      properties:
+        dsnpIds:
+          type: array
+          items:
+            type: string
+        webhookEndpoint:
+          type: string
+      required:
+        - dsnpIds
+        - webhookEndpoint
