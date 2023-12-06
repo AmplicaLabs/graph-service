@@ -47,8 +47,8 @@ export class ApiController {
   // Create a provider graph
   @Post('update-graph')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a provider graph' })
-  @ApiCreatedResponse({ description: 'Provider graph created successfully' })
+  @ApiOperation({ summary: 'Request an update to given users graph' })
+  @ApiCreatedResponse({ description: 'Successfully queued job to update user graph' })
   @ApiBody({ type: ProviderGraphDto })
   async updateGraph(@Body() providerGraphDto: ProviderGraphDto) {
     try {
@@ -56,11 +56,11 @@ export class ApiController {
       // const result = await this.apiService.updateGraph(providerGraphDto);
       return {
         status: HttpStatus.CREATED,
-        data: 'Provider graph created successfully',
+        data: 'Successfully queued job to update user graph',
       };
     } catch (error) {
       this.logger.error(error);
-      throw new Error('Failed to create provider graph');
+      throw new Error('Failed to update graph');
     }
   }
 }
