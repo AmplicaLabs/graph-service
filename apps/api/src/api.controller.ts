@@ -5,7 +5,7 @@ import { GraphsQueryParamsDto, ProviderGraphDto } from '../../../libs/common/src
 import { WatchGraphsDto } from '../../../libs/common/src/dtos/watch-graphs.dto';
 
 @Controller('api')
-@ApiTags('API') // Specify the tag for Swagger documentation
+@ApiTags('graph-service')
 export class ApiController {
   private readonly logger: Logger;
 

@@ -1,13 +1,79 @@
 openapi: 3.0.0
-description: 'Graph Service API'
-info:
-  title: Graph Service API
-  version: 0.1.0
 paths:
   /api/health:
     get:
       operationId: ApiController_health
+      summary: Check the health status of the service
       parameters: []
       responses:
         '200':
-          description: ''
+          description: Service is healthy
+      tags:
+        - graph-service
+  /api/graphs:
+    get:
+      operationId: ApiController_getGraphs
+      summary: Fetch graphs for specified dsnpIds and blockNumber
+      parameters: []
+      responses:
+        '200':
+          description: Graphs retrieved successfully
+      tags:
+        - graph-service
+  /api/update-graph:
+    post:
+      operationId: ApiController_updateGraph
+      summary: Request an update to given users graph
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderGraphDto'
+      responses:
+        '201':
+          description: Successfully queued job to update user graph
+      tags:
+        - graph-service
+  /api/watch-graphs:
+    put:
+      operationId: ApiController_watchGraphs
+      summary: Watch graphs for specified dsnpIds and receive updates
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WatchGraphsDto'
+      responses:
+        '200':
+          description: Successfully started watching graphs
+      tags:
+        - graph-service
+info:
+  title: Graph Service
+  description: Graph Service API
+  version: '1.0'
+  contact: {}
+tags: []
+servers: []
+components:
+  securitySchemes:
+    bearer:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+      description: Enter JWT token
+    cookie:
+      type: apiKey
+      in: cookie
+      name: SESSION
+  schemas:
+    ProviderGraphDto:
+      type: object
+      properties: {}
+    WatchGraphsDto:
+      type: object
+      properties: {}
