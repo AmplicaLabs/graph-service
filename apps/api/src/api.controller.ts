@@ -1,7 +1,8 @@
-import { Controller, Get, Post, HttpCode, HttpStatus, Logger, Query, Body } from '@nestjs/common';
+import { Controller, Get, Post, HttpCode, HttpStatus, Logger, Query, Body, Put } from '@nestjs/common';
 import { ApiBody, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ApiService } from './api.service';
 import { GraphsQueryParamsDto, ProviderGraphDto } from '../../../libs/common/src';
+import { WatchGraphsDto } from '../../../libs/common/src/dtos/watch-graphs.dto';
 
 @Controller('api')
 @ApiTags('API') // Specify the tag for Swagger documentation
@@ -61,6 +62,25 @@ export class ApiController {
     } catch (error) {
       this.logger.error(error);
       throw new Error('Failed to update graph');
+    }
+  }
+
+  @Put('watch-graphs')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Watch graphs for specified dsnpIds and receive updates' })
+  @ApiOkResponse({ description: 'Successfully started watching graphs' })
+  @ApiBody({ type: WatchGraphsDto })
+  async watchGraphs(@Body() watchGraphsDto: WatchGraphsDto) {
+    try {
+      // TODO: Uncomment this line once the ApiService is implemented
+      // const result = await this.apiService.watchGraphs(watchGraphsDto);
+      return {
+        status: HttpStatus.OK,
+        data: 'Successfully started watching graphs',
+      };
+    } catch (error) {
+      this.logger.error(error);
+      throw new Error('Failed to watch graphs');
     }
   }
 }

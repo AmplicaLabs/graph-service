@@ -8,3 +8,4 @@ export * from './dtos/privacy.type.dto';
 export * from './dtos/key.type.dto';
 export * from './dtos/graph.key.pair.dto';
 export * from './dtos/connections.dto';
+export * from './dtos/watch-graphs.dto';
