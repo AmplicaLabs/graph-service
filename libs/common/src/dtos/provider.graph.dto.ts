@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PrivacyType } from './privacy.type.dto';
 import { GraphKeyPairDto } from './graph.key.pair.dto';
@@ -10,16 +10,12 @@ export class ProviderGraphDto {
   dsnpId: string;
 
   @IsNotEmpty()
-  @IsEnum(PrivacyType)
-  privacyType: PrivacyType;
-
-  @IsNotEmpty()
   @IsString()
   @ValidateNested({ each: true })
   @Type(() => ConnectionDto)
   connections: { data: ConnectionDto[] };
 
-  @IsNotEmpty()
-  @IsString()
-  graphKeyPairs: GraphKeyPairDto[];
+  @IsArray()
+  @IsOptional()
+  graphKeyPairs?: GraphKeyPairDto[];
 }

@@ -129,11 +129,6 @@ components:
       properties:
         dsnpId:
           type: string
-        privacyType:
-          type: string
-          enum:
-            - private
-            - public
         connections:
           type: object
           properties:
@@ -148,9 +143,7 @@ components:
             $ref: '#/components/schemas/GraphKeyPairDto'
       required:
         - dsnpId
-        - privacyType
         - connections
-        - graphKeyPairs
     WatchGraphsDto:
       type: object
       properties:
