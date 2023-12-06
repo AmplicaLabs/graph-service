@@ -1,7 +1,7 @@
-import { Controller, Get, HttpCode, HttpStatus, Logger, Query } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Post, HttpCode, HttpStatus, Logger, Query, Body } from '@nestjs/common';
+import { ApiBody, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ApiService } from './api.service';
-import { GraphsQueryParamsDto } from '../../../libs/common/src';
+import { GraphsQueryParamsDto, ProviderGraphDto } from '../../../libs/common/src';
 
 @Controller('api')
 @ApiTags('API') // Specify the tag for Swagger documentation
@@ -15,15 +15,20 @@ export class ApiController {
   // Health endpoint
   // eslint-disable-next-line class-methods-use-this
   @Get('health')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Check the health status of the service' })
+  @ApiOkResponse({ description: 'Service is healthy' })
   health() {
     return {
       status: HttpStatus.OK,
+      message: 'Service is healthy',
     };
   }
 
   // Fetch graphs for list of `dsnpIds` at optional `blockNumber`
   @Get('graphs')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Fetch graphs for specified dsnpIds and blockNumber' })
   @ApiOkResponse({ description: 'Graphs retrieved successfully' })
   async getGraphs(@Query() queryParams: GraphsQueryParamsDto) {
     try {
@@ -36,6 +41,26 @@ export class ApiController {
     } catch (error) {
       this.logger.error(error);
       throw new Error('Failed to fetch graphs');
+    }
+  }
+
+  // Create a provider graph
+  @Post('update-graph')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a provider graph' })
+  @ApiCreatedResponse({ description: 'Provider graph created successfully' })
+  @ApiBody({ type: ProviderGraphDto })
+  async updateGraph(@Body() providerGraphDto: ProviderGraphDto) {
+    try {
+      // TODO: Uncomment this line once the ApiService is implemented
+      // const result = await this.apiService.updateGraph(providerGraphDto);
+      return {
+        status: HttpStatus.CREATED,
+        data: 'Provider graph created successfully',
+      };
+    } catch (error) {
+      this.logger.error(error);
+      throw new Error('Failed to create provider graph');
     }
   }
 }
