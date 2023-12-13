@@ -30,6 +30,10 @@ paths:
       responses:
         '200':
           description: Graphs retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserGraphDto'
       tags:
         - graph-service
   /api/update-graph:
@@ -83,6 +87,17 @@ components:
       in: cookie
       name: SESSION
   schemas:
+    UserGraphDto:
+      type: object
+      properties:
+        dsnpId:
+          type: string
+        dsnpGraphEdge:
+          type: array
+          items:
+            type: object
+      required:
+        - dsnpId
     ConnectionDto:
       type: object
       properties:
