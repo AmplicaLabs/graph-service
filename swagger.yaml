@@ -87,6 +87,16 @@ components:
       in: cookie
       name: SESSION
   schemas:
+    DsnpGraphEdge:
+      type: object
+      properties:
+        userId:
+          type: string
+        since:
+          type: number
+      required:
+        - userId
+        - since
     UserGraphDto:
       type: object
       properties:
@@ -95,7 +105,7 @@ components:
         dsnpGraphEdge:
           type: array
           items:
-            type: object
+            $ref: '#/components/schemas/DsnpGraphEdge'
       required:
         - dsnpId
     ConnectionDto:
