@@ -11,3 +11,4 @@ export * from './dtos/graph.key.pair.dto';
 export * from './dtos/connections.dto';
 export * from './dtos/watch-graphs.dto';
 export * from './utils/nonce.service';
+export * from './utils/queues';
