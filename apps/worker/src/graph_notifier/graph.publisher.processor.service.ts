@@ -21,7 +21,7 @@ export class GraphNotifierService extends BaseConsumer {
   async process(job: Job<ITxMonitorJob, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     try {
-      // TODO: add logic to process graph change requests
+      // TODO: add logic to process graph tx checks and subsequent notifications
       this.logger.debug(job.asJSON());
     } catch (e) {
       this.logger.error(e);
