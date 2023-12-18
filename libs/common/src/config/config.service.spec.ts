@@ -40,6 +40,7 @@ describe('GraphSericeConfig', () => {
     FREQUENCY_URL: undefined,
     QUEUE_HIGH_WATER: undefined,
     API_PORT: undefined,
+    RECONNECTION_SERVICE_REQUIRED: undefined,
     GRAPH_ENVIRONMENT_TYPE: undefined,
     GRAPH_ENVIRONMENT_DEV_CONFIG: undefined,
     PROVIDER_ACCOUNT_SEED_PHRASE: undefined,
@@ -112,6 +113,10 @@ describe('GraphSericeConfig', () => {
 
     it('should get api port', () => {
       expect(graphServiceConfig.getApiPort()).toStrictEqual(parseInt(ALL_ENV.API_PORT as string, 10));
+    });
+
+    it('should get reconnection service required', () => {
+      expect(graphServiceConfig.getReconnectionServiceRequired()).toStrictEqual(ALL_ENV.RECONNECTION_SERVICE_REQUIRED === 'true');
     });
 
     it('should get graph environment type', () => {

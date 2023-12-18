@@ -11,6 +11,7 @@ export interface ConfigEnvironmentVariables {
   FREQUENCY_URL: URL;
   QUEUE_HIGH_WATER: number;
   API_PORT: number;
+  RECONNECTION_SERVICE_REQUIRED: boolean;
   GRAPH_ENVIRONMENT_TYPE: keyof EnvironmentType;
   GRAPH_ENVIRONMENT_DEV_CONFIG?: string;
   PROVIDER_ACCOUNT_SEED_PHRASE: string;
@@ -31,6 +32,10 @@ export class ConfigService {
 
   public getApiPort(): number {
     return this.nestConfigService.get<number>('API_PORT')!;
+  }
+
+  public getReconnectionServiceRequired(): boolean {
+    return this.nestConfigService.get<boolean>('RECONNECTION_SERVICE_REQUIRED')!;
   }
 
   public getRedisUrl(): URL {

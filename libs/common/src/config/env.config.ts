@@ -8,6 +8,7 @@ export const configModuleOptions: ConfigModuleOptions = {
     FREQUENCY_URL: Joi.string().uri().required(),
     QUEUE_HIGH_WATER: Joi.number().min(100).default(1000),
     API_PORT: Joi.number().min(0).default(3000),
+    RECONNECTION_SERVICE_REQUIRED: Joi.boolean().default(false),
     GRAPH_ENVIRONMENT_TYPE: Joi.string().required().valid('Mainnet', 'Rococo', 'Dev'),
     // GRAPH_ENVIRONMENT_DEV_CONFIG is optional, but if it is set, it must be a valid JSON string
     GRAPH_ENVIRONMENT_DEV_CONFIG: Joi.string().when('GRAPH_ENVIRONMENT_TYPE', {
