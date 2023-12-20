@@ -41,9 +41,11 @@ describe('GraphSericeConfig', () => {
     QUEUE_HIGH_WATER: undefined,
     API_PORT: undefined,
     RECONNECTION_SERVICE_REQUIRED: undefined,
+    BLOCKCHAIN_SCAN_INTERVAL_MINUTES: undefined,
     GRAPH_ENVIRONMENT_TYPE: undefined,
     GRAPH_ENVIRONMENT_DEV_CONFIG: undefined,
     PROVIDER_ACCOUNT_SEED_PHRASE: undefined,
+    PROVIDER_ID: undefined,
   };
 
   beforeAll(() => {
@@ -119,6 +121,10 @@ describe('GraphSericeConfig', () => {
       expect(graphServiceConfig.getReconnectionServiceRequired()).toStrictEqual(ALL_ENV.RECONNECTION_SERVICE_REQUIRED === 'true');
     });
 
+    it('should get blockchain scan interval minutes', () => {
+      expect(graphServiceConfig.getBlockchainScanIntervalMinutes()).toStrictEqual(parseInt(ALL_ENV.BLOCKCHAIN_SCAN_INTERVAL_MINUTES as string, 10));
+    });
+
     it('should get graph environment type', () => {
       expect(graphServiceConfig.getGraphEnvironmentType()).toStrictEqual(ALL_ENV.GRAPH_ENVIRONMENT_TYPE);
     });
@@ -129,6 +135,10 @@ describe('GraphSericeConfig', () => {
 
     it('should get provider account seed phrase', () => {
       expect(graphServiceConfig.getProviderAccountSeedPhrase()).toStrictEqual(ALL_ENV.PROVIDER_ACCOUNT_SEED_PHRASE);
+    });
+
+    it('should get provider id', () => {
+      expect(graphServiceConfig.getProviderId()).toStrictEqual(ALL_ENV.PROVIDER_ID);
     });
   });
 });
