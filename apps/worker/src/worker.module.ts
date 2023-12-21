@@ -12,6 +12,7 @@ import { GraphUpdatePublisherModule } from './graph_publisher/graph.publisher.pr
 import { GraphUpdatePublisherService } from './graph_publisher/graph.publisher.processor.service';
 import { GraphNotifierModule } from './graph_notifier/graph.monitor.processor.module';
 import { GraphNotifierService } from './graph_notifier/graph.monitor.processor.service';
+import { ProviderWebhookService } from '../../../libs/common/src';
 
 @Module({
   imports: [
@@ -51,6 +52,6 @@ import { GraphNotifierService } from './graph_notifier/graph.monitor.processor.s
     GraphUpdatePublisherModule,
     GraphNotifierModule,
   ],
-  providers: [ConfigService, RequestProcessorService, GraphUpdatePublisherService, GraphNotifierService],
+  providers: [ConfigService, RequestProcessorService, GraphUpdatePublisherService, GraphNotifierService, ProviderWebhookService],
 })
 export class WorkerModule {}
