@@ -22,5 +22,5 @@ export namespace QueueConstants {
   /**
    * Prefix for Redis keys that store webhook endpoints
    */
-  export const REDIS_WATCHER_PREFIX = 'watcher';
+  export const REDIS_WATCHER_PREFIX = 'graph-service-watcher';
 }
