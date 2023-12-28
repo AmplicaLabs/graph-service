@@ -7,7 +7,7 @@ import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { MessageSourceId, ProviderId } from '@frequency-chain/api-augment/interfaces';
 import { AxiosError, AxiosResponse } from 'axios';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
-import { GraphKeyPairDto, IGraphUpdateJob, ProviderGraphDto, ProviderGraphJob, ProviderWebhookService, QueueConstants } from '../../../../libs/common/src';
+import { ConnectionDto, GraphKeyPairDto, IGraphUpdateJob, ProviderGraphDto, ProviderGraphJob, ProviderWebhookService, QueueConstants } from '../../../../libs/common/src';
 import { BaseConsumer } from '../BaseConsumer';
 
 @Injectable()
@@ -28,7 +28,7 @@ export class GraphReconnectionService extends BaseConsumer {
   async process(job: Job<IGraphUpdateJob, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     try {
-      let graphConnections: ProviderGraphDto[] = [];
+      let graphConnections: ConnectionDto[] = [];
       let graphKeyPairs: GraphKeyPairDto[] = [];
       try {
         [graphConnections, graphKeyPairs] = await this.getUserGraphFromProvider(job.data.dsnpId, job.data.providerId);
@@ -36,13 +36,15 @@ export class GraphReconnectionService extends BaseConsumer {
           this.logger.debug(`No connections found for user ${job.data.dsnpId.toString()} from provider ${job.data.providerId.toString()}`);
           return;
         }
-        graphConnections.forEach((connection) => {
-          const providerGraphJob: ProviderGraphJob = {
-            referenceId: job.id ?? '',
-            providerGraphDto: connection,
-          };
-          this.reconnectRequestQueue.add(QueueConstants.RECONNECT_REQUEST_QUEUE, providerGraphJob);
-        });
+        const providerGraphJob: ProviderGraphJob = {
+          referenceId: job.id ?? '',
+          providerGraphDto: {
+            dsnpId: job.data.dsnpId.toString(),
+            connections: { data: graphConnections },
+            graphKeyPairs,
+          },
+        };
+        this.reconnectRequestQueue.add(QueueConstants.RECONNECT_REQUEST_QUEUE, providerGraphJob);
         this.logger.debug(`Found ${graphConnections.length} connections for user ${job.data.dsnpId.toString()} from provider ${job.data.providerId.toString()}`);
       } catch (e) {
         this.logger.error(`Error getting user graph from provider: ${e}`);
@@ -62,7 +64,7 @@ export class GraphReconnectionService extends BaseConsumer {
       pageSize,
     };
 
-    const allConnections: ProviderGraphDto[] = [];
+    const allConnections: ConnectionDto[] = [];
     const keyPairs: GraphKeyPairDto[] = [];
 
     let hasNextPage = true;
@@ -88,7 +90,7 @@ export class GraphReconnectionService extends BaseConsumer {
           throw new Error(`Provider webhook returned data for the wrong user: ${response.data.dsnpId}`);
         }
 
-        const { data }: { data: ProviderGraphDto[] } = response.data.connections;
+        const { data }: { data: ConnectionDto[] } = response.data.connections;
         allConnections.push(...data);
         const { graphKeyPairs }: { graphKeyPairs: GraphKeyPairDto[] } = response.data;
         if (graphKeyPairs) {
