@@ -11,7 +11,7 @@ export * from './dtos/connections.dto';
 export * from './dtos/watch-graphs.dto';
 export * from './dtos/dsnp.graph.edge.dto';
 export * from './dtos/graph.change.request.reference';
-export * from './dtos/graph.update.job';
+export * from './interfaces/graph.update.job';
 export * from './interfaces/graph-update-job.interface';
 export * from './interfaces/provider.graph.update-job.interface';
 export * from './services/nonce.service';

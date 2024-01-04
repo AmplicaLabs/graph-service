@@ -6,7 +6,7 @@ import Redis from 'ioredis';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { QueueConstants } from '../../../../libs/common/src';
 import { BaseConsumer } from '../BaseConsumer';
-import { GraphUpdateJob } from '../../../../libs/common/src/dtos/graph.update.job';
+import { GraphUpdateJob } from '../../../../libs/common/src/interfaces/graph.update.job';
 
 @Injectable()
 @Processor(QueueConstants.GRAPH_CHANGE_PUBLISH_QUEUE)

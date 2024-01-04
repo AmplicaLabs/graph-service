@@ -6,7 +6,7 @@ import Redis from 'ioredis';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { QueueConstants } from '../../../../libs/common/src';
 import { BaseConsumer } from '../BaseConsumer';
-import { ITxMonitorJob } from '../../../../libs/common/src/dtos/graph.notifier.job';
+import { ITxMonitorJob } from '../../../../libs/common/src/interfaces/graph.notifier.job';
 
 @Injectable()
 @Processor(QueueConstants.GRAPH_CHANGE_NOTIFY_QUEUE)
