@@ -28,7 +28,7 @@ export class ApiController {
 
   // Fetch graphs for list of `dsnpIds` at optional `blockNumber`
   // Fetch graphs for list of `dsnpIds` at optional `blockNumber`
-  @Post('graphs')
+  @Put('graphs')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Post a request to fetch graphs for specified dsnpIds and blockNumber' })
   @ApiOkResponse({ description: 'Graphs retrieved successfully', type: [UserGraphDto] })

@@ -11,7 +11,7 @@ paths:
       tags:
         - graph-service
   /api/graphs:
-    post:
+    put:
       operationId: ApiController_getGraphs
       summary: Post a request to fetch graphs for specified dsnpIds and blockNumber
       parameters: []
