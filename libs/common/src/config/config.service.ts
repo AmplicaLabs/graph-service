@@ -119,4 +119,9 @@ export class ConfigService {
   public getPageSize(): number {
     return this.nestConfigService.get('PAGE_SIZE')!;
   }
+
+  public getAsyncDebounceTime(): number {
+    this.logger.debug(`Async debounce time`);
+    return 1000;
+  }
 }
