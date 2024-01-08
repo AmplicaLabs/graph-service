@@ -38,7 +38,11 @@ export class AsyncDebouncerService {
     const cachedFuture = await this.redis.get(cacheKey);
     if (cachedFuture) {
       this.logger.debug(`Async operation for key ${dsnpId} is already inflight`);
-      return JSON.parse(cachedFuture);
+      this.logger.debug(`Data: ${cachedFuture}`);
+      const graphData: DsnpGraphEdge[] = JSON.parse(cachedFuture);
+      if (graphData && graphData.length > 0) {
+        return Promise.resolve(graphData);
+      }
     }
 
     let privacyTypeValue = PrivacyType.Public;
@@ -46,10 +50,8 @@ export class AsyncDebouncerService {
       privacyTypeValue = PrivacyType.Private;
     }
 
-    // Use async/await to wait for the asynchronous operation to complete
-    const graphEdges = this.graphStateManager.getConnectionsWithPrivacyType(dsnpId, privacyTypeValue, graphKeyPairs);
+    const graphEdges = await this.graphStateManager.getConnectionsWithPrivacyType(dsnpId, privacyTypeValue, graphKeyPairs);
 
-    // Continue with the rest of the debounce logic
     const debounceTime = this.configService.getAsyncDebounceTime();
     await this.redis.setex(cacheKey, debounceTime, JSON.stringify(graphEdges));
 
