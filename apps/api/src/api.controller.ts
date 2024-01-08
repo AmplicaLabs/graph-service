@@ -28,11 +28,11 @@ export class ApiController {
 
   // Fetch graphs for list of `dsnpIds` at optional `blockNumber`
   // Fetch graphs for list of `dsnpIds` at optional `blockNumber`
-  @Get('graphs')
+  @Post('graphs')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Fetch graphs for specified dsnpIds and blockNumber' })
-  @ApiOkResponse({ description: 'Graphs retrieved successfully', type: UserGraphDto })
-  async getGraphs(@Query() queryParams: GraphsQueryParamsDto): Promise<UserGraphDto[]> {
+  @ApiOperation({ summary: 'Post a request to fetch graphs for specified dsnpIds and blockNumber' })
+  @ApiOkResponse({ description: 'Graphs retrieved successfully', type: [UserGraphDto] })
+  async getGraphs(@Body() queryParams: GraphsQueryParamsDto): Promise<UserGraphDto[]> {
     try {
       const graphs = await this.apiService.getGraphs(queryParams);
       return graphs;

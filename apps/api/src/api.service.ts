@@ -68,8 +68,7 @@ export class ApiService implements OnApplicationShutdown {
   }
 
   async getGraphs(queryParams: GraphsQueryParamsDto): Promise<UserGraphDto[]> {
-    const { dsnpIds, blockNumber } = queryParams;
-    const privacyType = queryParams.privacyType || 'public';
+    const { dsnpIds, privacyType } = queryParams;
     const graphKeyPairs = queryParams.graphKeyPairs || [];
     const graphs: UserGraphDto[] = [];
     // eslint-disable-next-line no-restricted-syntax

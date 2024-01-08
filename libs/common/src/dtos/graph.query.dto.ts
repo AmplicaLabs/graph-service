@@ -10,14 +10,9 @@ export class GraphsQueryParamsDto {
   dsnpIds: string[];
 
   @IsEnum(PrivacyType)
-  privacyType?: PrivacyType;
+  privacyType: PrivacyType;
 
   @IsOptional()
   @IsArray()
-  @ArrayUnique()
-  graphKeyPairs?: GraphKeyPairDto[];
-
-  @IsOptional()
-  @IsString()
-  blockNumber?: string;
+  graphKeyPairs: GraphKeyPairDto[];
 }
