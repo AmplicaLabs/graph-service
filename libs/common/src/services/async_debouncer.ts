@@ -49,10 +49,15 @@ export class AsyncDebouncerService {
     if (privacyType === 'private') {
       privacyTypeValue = PrivacyType.Private;
     }
-
-    const graphEdges = await this.graphStateManager.getConnectionsWithPrivacyType(dsnpId, privacyTypeValue, graphKeyPairs);
-
-    const debounceTime = this.configService.getAsyncDebounceTime();
+    let graphEdges: DsnpGraphEdge[] = [];
+    try {
+      graphEdges = await this.graphStateManager.getConnectionsWithPrivacyType(dsnpId, privacyTypeValue, graphKeyPairs);
+    } catch (err) {
+      this.logger.error(`Error getting graph edges for ${dsnpId} with privacy type ${privacyType}`);
+      this.logger.error(err);
+      return Promise.resolve(graphEdges);
+    }
+    const debounceTime = this.configService.getDebounceSeconds();
     await this.redis.setex(cacheKey, debounceTime, JSON.stringify(graphEdges));
 
     return Promise.resolve(graphEdges);
