@@ -29,18 +29,25 @@ export class GraphUpdatePublisherService extends BaseConsumer {
   async process(job: Job<GraphUpdateJob, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     try {
-      // TODO: add logic to process graph change requests
       switch (job.data.update.type) {
-        case 'PersistPage':
-          this.blockchainService.createExtrinsicCall(
+        case 'PersistPage': {
+          let payloadData: number[] = [];
+          if (typeof job.data.update.payload === 'object' && 'data' in job.data.update.payload) {
+            payloadData = Array.from((job.data.update.payload as { data: Uint8Array }).data);
+          }
+          const result = this.blockchainService.createExtrinsicCall(
             { pallet: 'statefulStorage', extrinsic: 'upsertPage' },
             job.data.update.ownerDsnpUserId,
             job.data.update.schemaId,
             job.data.update.pageId,
             job.data.update.prevHash,
-            Array.from(job.data.update.payload),
+            payloadData,
           );
+          this.logger.debug(`PersistPage: dsnpId:${job.data.update.ownerDsnpUserId.toString()}`);
+          this.logger.debug(`PersistPage: result:${result}`);
+          this.logger.debug(`PersistPage: result:${JSON.stringify(result, null, 2)}`);
           break;
+        }
         case 'DeletePage':
           this.blockchainService.createExtrinsicCall(
             { pallet: 'statefulStorage', extrinsic: 'deletePage' },
@@ -49,6 +56,7 @@ export class GraphUpdatePublisherService extends BaseConsumer {
             job.data.update.pageId,
             job.data.update.prevHash,
           );
+          this.logger.debug(`DeletePage: dsnpId:${job.data.update.ownerDsnpUserId.toString()}`);
           break;
         case 'AddKey':
           this.blockchainService.createExtrinsicCall(
@@ -57,12 +65,13 @@ export class GraphUpdatePublisherService extends BaseConsumer {
             job.data.update.prevHash,
             Array.from(job.data.update.payload),
           );
+          this.logger.debug(`AddKey: dsnpId:${job.data.update.ownerDsnpUserId.toString()}`);
           break;
         default:
           break;
       }
 
-      this.logger.debug(job.asJSON());
+      this.logger.debug(`job: ${JSON.stringify(job, null, 2)}`);
     } catch (e) {
       this.logger.error(e);
       throw e;
