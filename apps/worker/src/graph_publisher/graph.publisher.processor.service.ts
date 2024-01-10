@@ -1,19 +1,29 @@
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import { Processor } from '@nestjs/bullmq';
+import { InjectQueue, Processor } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
-import { Job } from 'bullmq';
+import { Job, Queue } from 'bullmq';
 import Redis from 'ioredis';
+import { Hash } from '@polkadot/types/interfaces';
+import { KeyringPair } from '@polkadot/keyring/types';
+import { SubmittableExtrinsic } from '@polkadot/api-base/types';
+import { ISubmittableResult } from '@polkadot/types/types';
+import { MILLISECONDS_PER_SECOND } from 'time-constants';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { QueueConstants, NonceService } from '../../../../libs/common/src';
 import { BaseConsumer } from '../BaseConsumer';
 import { GraphUpdateJob } from '../../../../libs/common/src/dtos/graph.update.job';
 import { BlockchainService } from '../../../../libs/common/src/blockchain/blockchain.service';
+import { createKeys } from '../../../../libs/common/src/blockchain/create-keys';
+import { ITxMonitorJob } from '../../../../libs/common/src/dtos/graph.notifier.job';
+
+export const SECONDS_PER_BLOCK = 12;
 
 @Injectable()
 @Processor(QueueConstants.GRAPH_CHANGE_PUBLISH_QUEUE)
 export class GraphUpdatePublisherService extends BaseConsumer {
   constructor(
     @InjectRedis() private cacheManager: Redis,
+    @InjectQueue(QueueConstants.GRAPH_CHANGE_NOTIFY_QUEUE) private graphChangeNotifyQueue: Queue,
     private configService: ConfigService,
     private blockchainService: BlockchainService,
     private nonceService: NonceService,
@@ -28,6 +38,9 @@ export class GraphUpdatePublisherService extends BaseConsumer {
    */
   async process(job: Job<GraphUpdateJob, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
+    let statefulStorageTxHash: Hash = {} as Hash;
+    const lastFinalizedBlockHash = await this.blockchainService.getLatestFinalizedBlockHash();
+    const currentCapacityEpoch = await this.blockchainService.getCurrentCapacityEpoch();
     try {
       switch (job.data.update.type) {
         case 'PersistPage': {
@@ -35,7 +48,8 @@ export class GraphUpdatePublisherService extends BaseConsumer {
           if (typeof job.data.update.payload === 'object' && 'data' in job.data.update.payload) {
             payloadData = Array.from((job.data.update.payload as { data: Uint8Array }).data);
           }
-          const result = this.blockchainService.createExtrinsicCall(
+          const providerKeys = createKeys(this.configService.getProviderAccountSeedPhrase());
+          const tx = this.blockchainService.createExtrinsicCall(
             { pallet: 'statefulStorage', extrinsic: 'upsertPage' },
             job.data.update.ownerDsnpUserId,
             job.data.update.schemaId,
@@ -43,37 +57,62 @@ export class GraphUpdatePublisherService extends BaseConsumer {
             job.data.update.prevHash,
             payloadData,
           );
-          this.logger.debug(`PersistPage: dsnpId:${job.data.update.ownerDsnpUserId.toString()}`);
-          this.logger.debug(`PersistPage: result:${result}`);
-          this.logger.debug(`PersistPage: result:${JSON.stringify(result, null, 2)}`);
+          statefulStorageTxHash = await this.processSingleBatch(providerKeys, tx);
           break;
         }
-        case 'DeletePage':
-          this.blockchainService.createExtrinsicCall(
-            { pallet: 'statefulStorage', extrinsic: 'deletePage' },
-            job.data.update.ownerDsnpUserId,
-            job.data.update.schemaId,
-            job.data.update.pageId,
-            job.data.update.prevHash,
-          );
-          this.logger.debug(`DeletePage: dsnpId:${job.data.update.ownerDsnpUserId.toString()}`);
-          break;
-        case 'AddKey':
-          this.blockchainService.createExtrinsicCall(
-            { pallet: 'statefulStorage', extrinsic: 'addKey' },
-            job.data.update.ownerDsnpUserId,
-            job.data.update.prevHash,
-            Array.from(job.data.update.payload),
-          );
-          this.logger.debug(`AddKey: dsnpId:${job.data.update.ownerDsnpUserId.toString()}`);
-          break;
         default:
           break;
       }
 
       this.logger.debug(`job: ${JSON.stringify(job, null, 2)}`);
+
+      // Add a job to the graph change notify queue
+      const txMonitorJob: ITxMonitorJob = {
+        id: job.data.referenceId,
+        txHash: statefulStorageTxHash,
+        epoch: currentCapacityEpoch.toString(),
+        lastFinalizedBlockHash,
+        referencePublishJob: job.data,
+      };
+      const blockDelay = SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND;
+
+      this.graphChangeNotifyQueue.add(`Graph Change Notify Job - ${txMonitorJob.id}`, txMonitorJob, {
+        removeOnFail: false,
+        removeOnComplete: 2000,
+        delay: blockDelay,
+      });
     } catch (e) {
       this.logger.error(e);
+      throw e;
+    }
+  }
+
+  /**
+   * Processes a single batch by submitting a transaction to the blockchain.
+   *
+   * @param providerKeys The key pair used for signing the transaction.
+   * @param tx The transaction to be submitted.
+   * @returns The hash of the submitted transaction.
+   * @throws Error if the transaction hash is undefined or if there is an error processing the batch.
+   */
+  async processSingleBatch(providerKeys: KeyringPair, tx: SubmittableExtrinsic<'rxjs', ISubmittableResult>): Promise<Hash> {
+    this.logger.debug(`Submitting tx of size ${tx.length}`);
+    try {
+      const ext = this.blockchainService.createExtrinsic(
+        { pallet: 'frequencyTxPayment', extrinsic: 'payWithCapacity' },
+        { eventPallet: 'frequencyTxPayment', event: 'CapacityPaid' },
+        providerKeys,
+        tx,
+      );
+      const nonce = await this.nonceService.getNextNonce();
+      const [txHash, _] = await ext.signAndSend(nonce);
+      if (!txHash) {
+        throw new Error('Tx hash is undefined');
+      }
+      this.logger.debug(`Tx hash: ${txHash}`);
+      return txHash;
+    } catch (e) {
+      this.logger.error(`Error processing batch: ${e}`);
       throw e;
     }
   }
