@@ -60,9 +60,11 @@ import { BlockchainService } from '../../../../libs/common/src/blockchain/blockc
       },
       {
         name: QueueConstants.GRAPH_CHANGE_REQUEST_QUEUE,
-      },
-      {
-        name: QueueConstants.GRAPH_CHANGE_PUBLISH_QUEUE,
+        defaultJobOptions: {
+          removeOnComplete: true,
+          removeOnFail: false,
+          attempts: 3,
+        },
       },
       {
         name: QueueConstants.RECONNECT_REQUEST_QUEUE,
