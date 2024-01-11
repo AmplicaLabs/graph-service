@@ -59,6 +59,11 @@ import { GraphReconnectionService } from './graph.reconnection.processor.service
       },
       {
         name: QueueConstants.GRAPH_CHANGE_REQUEST_QUEUE,
+        defaultJobOptions: {
+          removeOnComplete: false,
+          removeOnFail: false,
+          attempts: 3,
+        },
       },
     ),
   ],
