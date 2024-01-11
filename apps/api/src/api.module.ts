@@ -80,7 +80,7 @@ import { GraphStateManager, QueueConstants } from '../../../libs/common/src';
       {
         name: QueueConstants.GRAPH_CHANGE_PUBLISH_QUEUE,
         defaultJobOptions: {
-          removeOnComplete: false,
+          removeOnComplete: true,
           removeOnFail: false,
           attempts: 3,
         },

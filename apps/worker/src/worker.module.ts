@@ -59,7 +59,7 @@ import { BlockchainScannerService } from '../../../libs/common/src/services/bloc
       {
         name: QueueConstants.GRAPH_CHANGE_PUBLISH_QUEUE,
         defaultJobOptions: {
-          removeOnComplete: false,
+          removeOnComplete: true,
           removeOnFail: false,
           attempts: 3,
         },

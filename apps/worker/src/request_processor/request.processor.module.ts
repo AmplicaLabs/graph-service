@@ -60,7 +60,7 @@ import { BlockchainModule } from '../../../../libs/common/src/blockchain/blockch
       {
         name: QueueConstants.GRAPH_CHANGE_PUBLISH_QUEUE,
         defaultJobOptions: {
-          removeOnComplete: false,
+          removeOnComplete: true,
           removeOnFail: false,
           attempts: 3,
         },
