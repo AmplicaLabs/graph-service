@@ -51,6 +51,11 @@ import { BlockchainModule } from '../../../../libs/common/src/blockchain/blockch
     BullModule.registerQueue(
       {
         name: QueueConstants.GRAPH_CHANGE_REQUEST_QUEUE,
+        defaultJobOptions: {
+          removeOnComplete: false,
+          removeOnFail: false,
+          attempts: 3,
+        },
       },
       {
         name: QueueConstants.GRAPH_CHANGE_PUBLISH_QUEUE,
