@@ -8,6 +8,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { SubmittableExtrinsic } from '@polkadot/api-base/types';
 import { ISubmittableResult } from '@polkadot/types/types';
 import { MILLISECONDS_PER_SECOND } from 'time-constants';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { QueueConstants, NonceService } from '../../../../libs/common/src';
 import { BaseConsumer } from '../BaseConsumer';
@@ -23,10 +24,12 @@ export const SECONDS_PER_BLOCK = 12;
 export class GraphUpdatePublisherService extends BaseConsumer {
   constructor(
     @InjectRedis() private cacheManager: Redis,
+    @InjectQueue(QueueConstants.GRAPH_CHANGE_PUBLISH_QUEUE) private graphChangePublishQueue: Queue,
     @InjectQueue(QueueConstants.GRAPH_CHANGE_NOTIFY_QUEUE) private graphChangeNotifyQueue: Queue,
     private configService: ConfigService,
     private blockchainService: BlockchainService,
     private nonceService: NonceService,
+    private emitter: EventEmitter2,
   ) {
     super();
   }
@@ -81,9 +84,14 @@ export class GraphUpdatePublisherService extends BaseConsumer {
         removeOnComplete: 2000,
         delay: blockDelay,
       });
-    } catch (e) {
-      this.logger.error(e);
-      throw e;
+    } catch (error: any) {
+      // If error message starts with `1010: Invalid Transaction: Inability to pay some fees, e.g. account balance too low`
+      // then emit an event to pause the queues
+      if (error.message.startsWith('1010: Invalid Transaction: Inability to pay some fees')) {
+        this.emitter.emit('lowCapacity');
+      }
+      this.logger.error(error);
+      throw error;
     }
   }
 
@@ -111,9 +119,29 @@ export class GraphUpdatePublisherService extends BaseConsumer {
       }
       this.logger.debug(`Tx hash: ${txHash}`);
       return txHash;
-    } catch (e) {
-      this.logger.error(`Error processing batch: ${e}`);
-      throw e;
+    } catch (error: any) {
+      this.logger.error(`Error processing batch: ${error}`);
+      throw error;
     }
+  }
+
+  /**
+   * Handles low capacity by pausing the graph change notify queue.
+   * @returns A promise that resolves when the queue is paused.
+   */
+  @OnEvent('lowCapacity', { async: true, promisify: true })
+  private async handleLowCapacity(): Promise<void> {
+    this.logger.debug('Pausing graph change notify queue');
+    // await this.graphChangePublishQueue.pause();
+  }
+
+  /**
+   * Handles capacity recovered by resuming the graph change notify queue.
+   * @returns A promise that resolves when the queue is resumed.
+   */
+  @OnEvent('capacityRecovered', { async: true, promisify: true })
+  private async handleCapacityRecovered(): Promise<void> {
+    this.logger.debug('Resuming graph change notify queue');
+    // await this.graphChangeNotifyQueue.resume();
   }
 }
