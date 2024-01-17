@@ -48,6 +48,7 @@ export class ApiService implements OnApplicationShutdown {
       dsnpId: request.dsnpId,
       providerId,
       connections: request.connections.data,
+      graphKeyPairs: request.graphKeyPairs,
       referenceId: this.calculateJobId(request),
       updateConnection: this.configService.getReconnectionServiceRequired(),
     };
