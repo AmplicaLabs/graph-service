@@ -12,6 +12,9 @@
             "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
+            "env": {
+                "DEBUG": "*",
+            }
         },
 		{
             "type": "node",

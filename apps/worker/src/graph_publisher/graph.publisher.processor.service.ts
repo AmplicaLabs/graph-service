@@ -132,7 +132,26 @@ export class GraphUpdatePublisherService extends BaseConsumer {
   @OnEvent('lowCapacity', { async: true, promisify: true })
   private async handleLowCapacity(): Promise<void> {
     this.logger.debug('Pausing graph change notify queue');
-    // await this.graphChangePublishQueue.pause();
+    await this.graphChangePublishQueue.pause();
+
+    // Get the current epoch length
+    const epochLength = await this.blockchainService.getCurrentEpochLength();
+    // Get the current epoch start block number
+    const currentEpochStart = await this.blockchainService.getCurrentCapacityEpochStart();
+    // Get the current block number
+    const currentBlockNumber = await this.blockchainService.getLatestFinalizedBlockNumber();
+    // Calculate the start of the next epoch
+    const nextEpochStart = currentEpochStart.toNumber() + epochLength;
+    // Calculate the number of seconds to pause the queue
+    const pauseSeconds = BigInt(nextEpochStart - Number(currentBlockNumber)) * BigInt(SECONDS_PER_BLOCK);
+    // Set a timeout to resume the queue
+    setTimeout(
+      async () => {
+        this.logger.debug('Resuming graph change notify queue');
+        await this.graphChangePublishQueue.resume();
+      },
+      Number(pauseSeconds) * MILLISECONDS_PER_SECOND,
+    );
   }
 
   /**
