@@ -27,5 +27,5 @@ describe('Graph Service E2E request verification!', () => {
     await app.init();
   });
 
-  it('(GET) /api/health', () => request(app.getHttpServer()).get('/api/health').expect(200).expect({ status: 200 }));
+  it('(GET) /api/health', () => request(app.getHttpServer()).get('/api/health').expect(200).expect({ status: 200, message: 'Service is healthy' }));
 });
