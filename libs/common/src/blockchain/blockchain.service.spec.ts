@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, jest, expect } from '@jest/globals';
 import { PalletCapacityEpochInfo } from '@polkadot/types/lookup';
-import { ApiPromise } from '@polkadot/api';
+import { u32 } from '@polkadot/types';
 import { BlockchainService } from './blockchain.service';
 import { ConfigService } from '../config/config.service';
 
@@ -55,7 +55,7 @@ describe('BlockchainService', () => {
   describe('getCurrentCapacityEpochStart', () => {
     it('should return the current capacity epoch start', async () => {
       // Arrange
-      const expectedEpochStart = mockApi.createType('u32', 123);
+      const expectedEpochStart: u32 = mockApi.createType('u32', 123);
       const currentEpochInfo = { epochStart: expectedEpochStart };
 
       jest.spyOn(blockchainService, 'query').mockResolvedValue(currentEpochInfo);

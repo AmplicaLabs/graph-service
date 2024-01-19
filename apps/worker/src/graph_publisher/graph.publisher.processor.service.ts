@@ -18,10 +18,27 @@ import { createKeys } from '../../../../libs/common/src/blockchain/create-keys';
 import { ITxMonitorJob } from '../../../../libs/common/src/dtos/graph.notifier.job';
 
 export const SECONDS_PER_BLOCK = 12;
+const CAPACITY_EPOCH_TIMEOUT_NAME = 'capacity_check';
 
+/**
+ * Service responsible for publishing graph updates.
+ */
 @Injectable()
 @Processor(QueueConstants.GRAPH_CHANGE_PUBLISH_QUEUE)
 export class GraphUpdatePublisherService extends BaseConsumer {
+  private capacityExhausted = false;
+
+  public async onApplicationBootstrap() {
+    await this.checkCapacity();
+  }
+
+  // public public onModuleDestroy() {
+  //   try {
+  //     this.schedulerRegistry.deleteTimeout(CAPACITY_EPOCH_TIMEOUT_NAME);
+  //   } catch (err) {
+  //     // ignore
+  // }
+
   constructor(
     @InjectRedis() private cacheManager: Redis,
     @InjectQueue(QueueConstants.GRAPH_CHANGE_PUBLISH_QUEUE) private graphChangePublishQueue: Queue,
@@ -92,6 +109,8 @@ export class GraphUpdatePublisherService extends BaseConsumer {
       }
       this.logger.error(error);
       throw error;
+    } finally {
+      await this.checkCapacity();
     }
   }
 
@@ -162,5 +181,80 @@ export class GraphUpdatePublisherService extends BaseConsumer {
   private async handleCapacityRecovered(): Promise<void> {
     this.logger.debug('Resuming graph change notify queue');
     // await this.graphChangeNotifyQueue.resume();
+  }
+
+  @OnEvent('capacity.exhausted', { async: true, promisify: true })
+  private async handleCapacityExhausted() {
+    this.logger.debug('Received capacity.exhausted event');
+    this.capacityExhausted = true;
+    await this.graphChangePublishQueue.pause();
+    const capacityLimit = this.configService.getCapacityLimit();
+    const capacity = await this.blockchainService.capacityInfo(this.configService.getProviderId());
+
+    this.logger.debug(`
+    Capacity limit: ${JSON.stringify(capacityLimit)}
+    Capacity info: ${JSON.stringify(capacity)}`);
+
+    await this.graphChangePublishQueue.pause();
+    const blocksRemaining = capacity.nextEpochStart - capacity.currentBlockNumber;
+    try {
+      this.schedulerRegistry.addTimeout(
+        CAPACITY_EPOCH_TIMEOUT_NAME,
+        setTimeout(() => this.checkCapacity(), blocksRemaining * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND),
+      );
+    } catch (err) {
+      // ignore duplicate timeout
+    }
+  }
+
+  @OnEvent('capacity.refilled', { async: true, promisify: true })
+  private async handleCapacityRefilled() {
+    this.logger.debug('Received capacity.refilled event');
+    this.capacityExhausted = false;
+    try {
+      this.schedulerRegistry.deleteTimeout(CAPACITY_EPOCH_TIMEOUT_NAME);
+    } catch (err) {
+      // ignore
+    }
+
+    if (this.webhookOk) {
+      await this.graphChangePublishQueue.resume();
+    }
+  }
+
+  private async checkCapacity(): Promise<void> {
+    try {
+      const capacityLimit = this.configService.getCapacityLimit();
+      const capacity = await this.blockchainService.capacityInfo(this.configService.getProviderId());
+      const { remainingCapacity } = capacity;
+      const { currentEpoch } = capacity;
+      const epochCapacityKey = `epochCapacity:${currentEpoch}`;
+      const epochUsedCapacity = BigInt((await this.cacheManager.get(epochCapacityKey)) ?? 0); // Fetch capacity used by the service
+      let outOfCapacity = remainingCapacity <= 0n;
+
+      if (!outOfCapacity) {
+        this.logger.debug(`Capacity remaining: ${remainingCapacity}`);
+        if (capacityLimit.type === 'percentage') {
+          const capacityLimitPercentage = BigInt(capacityLimit.value);
+          const capacityLimitThreshold = (capacity.totalCapacityIssued * capacityLimitPercentage) / 100n;
+          this.logger.debug(`Capacity limit threshold: ${capacityLimitThreshold}`);
+          if (epochUsedCapacity >= capacityLimitThreshold) {
+            outOfCapacity = true;
+            this.logger.warn(`Capacity threshold reached: used ${epochUsedCapacity} of ${capacityLimitThreshold}`);
+          }
+        } else if (epochUsedCapacity >= capacityLimit.value) {
+          outOfCapacity = true;
+          this.logger.warn(`Capacity threshold reached: used ${epochUsedCapacity} of ${capacityLimit.value}`);
+        }
+      }
+
+      if (outOfCapacity) {
+        await this.emitter.emitAsync('capacity.exhausted');
+      } else {
+        await this.emitter.emitAsync('capacity.refilled');
+      }
+    } catch (err) {
+      this.logger.error('Caught error in checkCapacity', err);
+    }
   }
 }
