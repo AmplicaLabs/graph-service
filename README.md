@@ -24,7 +24,7 @@ A service enabling easy interaction with DSNP private and public graphs on Frequ
 2. Start docker compose
 
    ```bash
-   docker-compose up -d
+   docker-compose -f docker-compose.dev.yaml up -d
    ```
 
    This will start Frequency, Redis and Graph Service api/worker containers.
