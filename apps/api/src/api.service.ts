@@ -37,9 +37,7 @@ export class ApiService implements OnApplicationShutdown {
   }
 
   onApplicationShutdown(signal?: string | undefined) {
-    this.cleanupOnShutdown().then(() => {
-      this.logger.log('Cleanup on shutdown completed.');
-    });
+    this.logger.log('Cleanup on shutdown completed.');
   }
 
   async enqueueRequest(request: ProviderGraphDto): Promise<GraphChangeRepsonseDto> {
@@ -89,14 +87,5 @@ export class ApiService implements OnApplicationShutdown {
   private calculateJobId(jobWithoutId: ProviderGraphDto): string {
     const stringVal = JSON.stringify(jobWithoutId);
     return createHash('sha1').update(stringVal).digest('base64url');
-  }
-
-  private async cleanupOnShutdown(): Promise<void> {
-    const keys = await this.redis.keys(`${QueueConstants.REDIS_WATCHER_PREFIX}:*`);
-
-    if (keys.length > 0) {
-      await this.redis.del(keys);
-      this.logger.log(`Removed keys on shutdown: ${keys.join(', ')}`);
-    }
   }
 }
