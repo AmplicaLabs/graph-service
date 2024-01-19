@@ -72,8 +72,8 @@ describe('Graph Service E2E request verification!', () => {
             keyType: KeyType.X25519,
             publicKey: '0x993052b57e8695d9124964f69f624fcc2080be7525c65b1acd089dff235a0e02',
             privateKey: '0xf74d39829ac4a814048cbda6b35ee1c3c16fbd2b88f97d552aa344bffb5207a5',
-          } as GraphKeyPairDto
-        ]
+          } as GraphKeyPairDto,
+        ],
       };
 
       return request(app.getHttpServer())
