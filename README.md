@@ -35,7 +35,7 @@ A service enabling easy interaction with DSNP private and public graphs on Frequ
     git clone https://github.com/AmplicaLabs/frequency-scenario-template.git
     cd frequency-scenario-template
     git checkout graph-service-setup
-    npm run run-example
+    npm run run-example --example=graph-migration-setup
     ```
 
     This will create `//Ferdie` as provider along with DSNPIds 2,3,4,5 and 6 as users. The template will also add a public key for each user in itemized storage needed for private graph operations.
@@ -68,7 +68,7 @@ A service enabling easy interaction with DSNP private and public graphs on Frequ
     git clone https://github.com/AmplicaLabs/frequency-scenario-template.git
     cd frequency-scenario-template
     git checkout graph-service-setup
-    npm run run-example
+    npm run run-example --example=graph-migration-setup
     ```
 
     This will create `//Ferdie` as provider along with DSNPIds 2,3,4,5 and 6 as users. The template will also add a public key for each user in itemized storage needed for private graph operations.
