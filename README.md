@@ -45,7 +45,26 @@ A service enabling easy interaction with DSNP private and public graphs on Frequ
 
 ## Running E2E tests
 
-1. Run the tests
+1. Start redis and frequency with instant profile.
+
+   ```bash
+   docker-compose -f docker-compose.dev.yaml --profile instant up frequency redis
+   ```
+
+   This will start Frequency and Redis containers.
+
+2. Using nest cli start the api and worker.
+
+   ```bash
+   npx nest start api
+   npx nest start worker
+   ```
+
+   This will start the api and worker in watch mode.
+
+3. Check the job in [BullUI](http://0.0.0.0:3000/queues/), to monitor job progress based on defined tests.
+
+4. Run the tests
 
    ```bash
    npm run test:e2e
@@ -53,5 +72,4 @@ A service enabling easy interaction with DSNP private and public graphs on Frequ
 
    This will run the tests in `apps/api/test` folder.
 
-2. Check the job in [BullUI](http://0.0.0.0:3000/queues/)
-3. Check e2e test file for more details on the test.
+5. Check e2e test file for more details on the test.
