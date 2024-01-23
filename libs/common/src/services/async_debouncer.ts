@@ -47,6 +47,9 @@ export class AsyncDebouncerService {
 
     let privacyTypeValue = PrivacyType.Public;
     if (privacyType === 'private') {
+      if (!graphKeyPairs || graphKeyPairs.length === 0) {
+        throw new Error('Graph key pairs are required for private graph');
+      }
       privacyTypeValue = PrivacyType.Private;
     }
     let graphEdges: DsnpGraphEdge[] = [];

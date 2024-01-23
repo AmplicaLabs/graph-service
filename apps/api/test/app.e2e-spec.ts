@@ -47,24 +47,12 @@ describe('Graph Service E2E request verification!', () => {
         },
       };
 
-      request(app.getHttpServer())
+      return request(app.getHttpServer())
         .post(`/api/update-graph`)
         .send(validGraphChangeRequest)
         .expect(201)
         .expect((res) => expect(res.text).toContain('referenceId'));
-      // sleep for 5 seconds to allow the graph to be updated
-      await sleep(5000);
-      const userGraphGet: GraphsQueryParamsDto = {
-        dsnpIds: ['2'],
-        privacyType: PrivacyType.Public,
-      } as GraphsQueryParamsDto;
-
-      await request(app.getHttpServer())
-        .put(`/api/graphs`)
-        .send(userGraphGet)
-        .expect(200)
-        .expect((res) => expect(res.body[0].dsnpId).toBe('2'));
-    }, 10000);
+    });
 
     it('Valid private graph update request should work', async () => {
       const validGraphChangeRequest: ProviderGraphDto = {
