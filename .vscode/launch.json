@@ -13,7 +13,7 @@
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
             "env": {
-                "DEBUG": "*",
+                "DEBUG": "app:GraphUpdatePublisherModule",
             }
         },
 		{
@@ -25,5 +25,12 @@
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
         },
+        {
+            "type": "node",
+            "request": "attach",
+            "name": "Attach to Worker",
+            "port": 9230,
+            "restart": true,
+        }
 	]
 }
