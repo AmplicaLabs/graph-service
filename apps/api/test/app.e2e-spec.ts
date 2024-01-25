@@ -171,6 +171,29 @@ describe('Graph Service E2E request verification!', () => {
         .expect((res) => expect(res.text).toContain('referenceId'));
     });
   });
+  describe('(POST) /api/update-graph with bi-directional connection', () => {
+    it('Valid public graph update request should work', async () => {
+      const validGraphChangeRequest: ProviderGraphDto = {
+        dsnpId: '2',
+        connections: {
+          data: [
+            {
+              dsnpId: '5',
+              privacyType: PrivacyType.Public,
+              direction: Direction.Bidirectional,
+              connectionType: ConnectionType.Follow,
+            } as ConnectionDto,
+          ],
+        },
+      };
+
+      return request(app.getHttpServer())
+        .post(`/api/update-graph`)
+        .send(validGraphChangeRequest)
+        .expect(201)
+        .expect((res) => expect(res.text).toContain('referenceId'));
+    });
+  });
 
   afterEach(async () => {
     await app.close();
