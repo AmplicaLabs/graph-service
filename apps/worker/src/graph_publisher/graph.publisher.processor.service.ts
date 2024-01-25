@@ -9,6 +9,7 @@ import { SubmittableExtrinsic } from '@polkadot/api-base/types';
 import { ISubmittableResult } from '@polkadot/types/types';
 import { MILLISECONDS_PER_SECOND } from 'time-constants';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { SchedulerRegistry } from '@nestjs/schedule';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { QueueConstants, NonceService } from '../../../../libs/common/src';
 import { BaseConsumer } from '../BaseConsumer';
@@ -46,7 +47,8 @@ export class GraphUpdatePublisherService extends BaseConsumer {
     private configService: ConfigService,
     private blockchainService: BlockchainService,
     private nonceService: NonceService,
-    private emitter: EventEmitter2,
+    // private emitter: EventEmitter2,
+    private schedulerRegistry: SchedulerRegistry,
   ) {
     super();
   }
@@ -100,11 +102,7 @@ export class GraphUpdatePublisherService extends BaseConsumer {
         delay: blockDelay,
       });
     } catch (error: any) {
-      // If error message starts with `1010: Invalid Transaction: Inability to pay some fees, e.g. account balance too low`
-      // then emit an event to pause the queues
-      if (error.message.startsWith('1010: Invalid Transaction: Inability to pay some fees')) {
-        this.emitter.emit('lowCapacity');
-      }
+      // Failed transaction due to low capacity errors will be caught here and checkCapacity() will pause the queues
       this.logger.error(error);
       throw error;
     } finally {
@@ -142,90 +140,53 @@ export class GraphUpdatePublisherService extends BaseConsumer {
     }
   }
 
-  /**
-   * Handles low capacity by pausing the graph change notify queue.
-   * @returns A promise that resolves when the queue is paused.
-   */
-  @OnEvent('lowCapacity', { async: true, promisify: true })
-  private async handleLowCapacity(): Promise<void> {
-    this.logger.debug('Pausing graph change notify queue');
-    await this.graphChangePublishQueue.pause();
+  // @OnEvent('capacity.exhausted', { async: true, promisify: true })
+  // private async handleCapacityExhausted() {
+  //   this.logger.debug('Received capacity.exhausted event');
+  //   this.capacityExhausted = true;
+  //   await this.graphChangePublishQueue.pause();
+  //   const capacityLimit = this.configService.getCapacityLimit();
+  //   const capacityInfo = await this.blockchainService.capacityInfo(this.configService.getProviderId());
 
-    // Get the current epoch length
-    const epochLength = await this.blockchainService.getCurrentEpochLength();
-    // Get the current epoch start block number
-    const currentEpochStart = await this.blockchainService.getCurrentCapacityEpochStart();
-    // Get the current block number
-    const currentBlockNumber = await this.blockchainService.getLatestFinalizedBlockNumber();
-    // Calculate the start of the next epoch
-    const nextEpochStart = currentEpochStart.toNumber() + epochLength;
-    // Calculate the number of seconds to pause the queue
-    const pauseSeconds = BigInt(nextEpochStart - Number(currentBlockNumber)) * BigInt(SECONDS_PER_BLOCK);
-    // Set a timeout to resume the queue
-    setTimeout(
-      async () => {
-        this.logger.debug('Resuming graph change notify queue');
-        await this.graphChangePublishQueue.resume();
-      },
-      Number(pauseSeconds) * MILLISECONDS_PER_SECOND,
-    );
-  }
+  //   await this.graphChangePublishQueue.pause();
+  //   const blocksRemaining = capacityInfo.nextEpochStart - capacityInfo.currentBlockNumber;
+  //   try {
+  //     // Check if a timeout with the same name already exists
+  //     if (this.schedulerRegistry.doesExist('timeout', CAPACITY_EPOCH_TIMEOUT_NAME)) {
+  //       // If it does, delete it
+  //       this.schedulerRegistry.deleteTimeout(CAPACITY_EPOCH_TIMEOUT_NAME);
+  //     }
 
-  /**
-   * Handles capacity recovered by resuming the graph change notify queue.
-   * @returns A promise that resolves when the queue is resumed.
-   */
-  @OnEvent('capacityRecovered', { async: true, promisify: true })
-  private async handleCapacityRecovered(): Promise<void> {
-    this.logger.debug('Resuming graph change notify queue');
-    // await this.graphChangeNotifyQueue.resume();
-  }
+  //     // Add the new timeout
+  //     this.schedulerRegistry.addTimeout(
+  //       CAPACITY_EPOCH_TIMEOUT_NAME,
+  //       setTimeout(() => this.checkCapacity(), blocksRemaining * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND),
+  //     );
+  //   } catch (err) {
+  //     // Handle any errors
+  //     console.error(err);
+  //   }
+  // }
 
-  @OnEvent('capacity.exhausted', { async: true, promisify: true })
-  private async handleCapacityExhausted() {
-    this.logger.debug('Received capacity.exhausted event');
-    this.capacityExhausted = true;
-    await this.graphChangePublishQueue.pause();
-    const capacityLimit = this.configService.getCapacityLimit();
-    const capacity = await this.blockchainService.capacityInfo(this.configService.getProviderId());
+  // @OnEvent('capacity.refilled', { async: true, promisify: true })
+  // private async handleCapacityRefilled() {
+  //   this.logger.debug('Received capacity.refilled event');
+  //   this.capacityExhausted = false;
+  //   try {
+  //     this.schedulerRegistry.deleteTimeout(CAPACITY_EPOCH_TIMEOUT_NAME);
+  //   } catch (err) {
+  //     // ignore
+  //   }
 
-    this.logger.debug(`
-    Capacity limit: ${JSON.stringify(capacityLimit)}
-    Capacity info: ${JSON.stringify(capacity)}`);
-
-    await this.graphChangePublishQueue.pause();
-    const blocksRemaining = capacity.nextEpochStart - capacity.currentBlockNumber;
-    try {
-      this.schedulerRegistry.addTimeout(
-        CAPACITY_EPOCH_TIMEOUT_NAME,
-        setTimeout(() => this.checkCapacity(), blocksRemaining * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND),
-      );
-    } catch (err) {
-      // ignore duplicate timeout
-    }
-  }
-
-  @OnEvent('capacity.refilled', { async: true, promisify: true })
-  private async handleCapacityRefilled() {
-    this.logger.debug('Received capacity.refilled event');
-    this.capacityExhausted = false;
-    try {
-      this.schedulerRegistry.deleteTimeout(CAPACITY_EPOCH_TIMEOUT_NAME);
-    } catch (err) {
-      // ignore
-    }
-
-    if (this.webhookOk) {
-      await this.graphChangePublishQueue.resume();
-    }
-  }
+  //   await this.graphChangePublishQueue.resume();
+  // }
 
   private async checkCapacity(): Promise<void> {
     try {
       const capacityLimit = this.configService.getCapacityLimit();
-      const capacity = await this.blockchainService.capacityInfo(this.configService.getProviderId());
-      const { remainingCapacity } = capacity;
-      const { currentEpoch } = capacity;
+      const capacityInfo = await this.blockchainService.capacityInfo(this.configService.getProviderId());
+      const { remainingCapacity } = capacityInfo;
+      const { currentEpoch } = capacityInfo;
       const epochCapacityKey = `epochCapacity:${currentEpoch}`;
       const epochUsedCapacity = BigInt((await this.cacheManager.get(epochCapacityKey)) ?? 0); // Fetch capacity used by the service
       let outOfCapacity = remainingCapacity <= 0n;
@@ -234,7 +195,7 @@ export class GraphUpdatePublisherService extends BaseConsumer {
         this.logger.debug(`Capacity remaining: ${remainingCapacity}`);
         if (capacityLimit.type === 'percentage') {
           const capacityLimitPercentage = BigInt(capacityLimit.value);
-          const capacityLimitThreshold = (capacity.totalCapacityIssued * capacityLimitPercentage) / 100n;
+          const capacityLimitThreshold = (capacityInfo.totalCapacityIssued * capacityLimitPercentage) / 100n;
           this.logger.debug(`Capacity limit threshold: ${capacityLimitThreshold}`);
           if (epochUsedCapacity >= capacityLimitThreshold) {
             outOfCapacity = true;
@@ -247,9 +208,39 @@ export class GraphUpdatePublisherService extends BaseConsumer {
       }
 
       if (outOfCapacity) {
-        await this.emitter.emitAsync('capacity.exhausted');
+        // await this.emitter.emitAsync('capacity.exhausted');
+        this.logger.debug('Received capacity.exhausted event');
+        this.capacityExhausted = true;
+
+        await this.graphChangePublishQueue.pause();
+        const blocksRemaining = capacityInfo.nextEpochStart - capacityInfo.currentBlockNumber;
+        try {
+          // Check if a timeout with the same name already exists
+          if (this.schedulerRegistry.doesExist('timeout', CAPACITY_EPOCH_TIMEOUT_NAME)) {
+            // If it does, delete it
+            this.schedulerRegistry.deleteTimeout(CAPACITY_EPOCH_TIMEOUT_NAME);
+          }
+
+          // Add the new timeout
+          this.schedulerRegistry.addTimeout(
+            CAPACITY_EPOCH_TIMEOUT_NAME,
+            setTimeout(() => this.checkCapacity(), blocksRemaining * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND),
+          );
+        } catch (err) {
+          // Handle any errors
+          console.error(err);
+        }
       } else {
-        await this.emitter.emitAsync('capacity.refilled');
+        // await this.emitter.emitAsync('capacity.refilled');
+        this.logger.debug('Received capacity.refilled event');
+        this.capacityExhausted = false;
+        try {
+          this.schedulerRegistry.deleteTimeout(CAPACITY_EPOCH_TIMEOUT_NAME);
+        } catch (err) {
+          // ignore
+        }
+
+        await this.graphChangePublishQueue.resume();
       }
     } catch (err) {
       this.logger.error('Caught error in checkCapacity', err);
