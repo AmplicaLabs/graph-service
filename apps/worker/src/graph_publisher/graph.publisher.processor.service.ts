@@ -33,7 +33,7 @@ export class GraphUpdatePublisherService extends BaseConsumer {
     await this.checkCapacity();
   }
 
-  // public public onModuleDestroy() {
+  // public async onModuleDestroy() {
   //   try {
   //     this.schedulerRegistry.deleteTimeout(CAPACITY_EPOCH_TIMEOUT_NAME);
   //   } catch (err) {
@@ -102,6 +102,24 @@ export class GraphUpdatePublisherService extends BaseConsumer {
         delay: blockDelay,
       });
     } catch (error: any) {
+      // If error message starts with `1010: Invalid Transaction: Inability to pay some fees, e.g. account balance too low`
+      // then remove the job from the failed queue and add it to the paused queue
+      if (error.message.startsWith('1010: Invalid Transaction: Inability to pay some fees')) {
+        this.logger.error(`Job ${job.data.referenceId} failed (attempts=${job.attemptsMade})`);
+        const isDeadLetter = job.data.referenceId?.search(this.configService.getDeadLetterPrefix()) === 0;
+        if (!isDeadLetter && job.attemptsMade === 1 && job.data.referenceId) {
+          this.logger.debug(`Adding delay to job ${job.data.referenceId}`);
+          const deadLetterDelayedJobId = `${this.configService.getDeadLetterPrefix()}${job.data.referenceId}`;
+          // Add this job with priority to the paused queue
+          this.graphChangePublishQueue.remove(deadLetterDelayedJobId);
+          this.graphChangePublishQueue.remove(job.data.referenceId);
+          this.graphChangePublishQueue.add(`Graph Change Publish Job - ${job.data.referenceId}`, job.data, {
+            jobId: deadLetterDelayedJobId,
+            delay: 1000,
+            priority: 1,
+          });
+        }
+      }
       // Failed transaction due to low capacity errors will be caught here and checkCapacity() will pause the queues
       this.logger.error(error);
       throw error;
@@ -209,7 +227,7 @@ export class GraphUpdatePublisherService extends BaseConsumer {
 
       if (outOfCapacity) {
         // await this.emitter.emitAsync('capacity.exhausted');
-        this.logger.debug('Received capacity.exhausted event');
+        this.logger.debug('Capacity Exhausted: Pausing graph change publish queue and setting timeout');
         this.capacityExhausted = true;
 
         await this.graphChangePublishQueue.pause();

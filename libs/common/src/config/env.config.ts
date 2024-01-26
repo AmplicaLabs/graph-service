@@ -78,5 +78,6 @@ export const configModuleOptions: ConfigModuleOptions = {
         return value;
       })
       .required(),
+    DEAD_LETTER_JOB_PREFIX: Joi.string().default('dead-letter:'),
   }),
 };
