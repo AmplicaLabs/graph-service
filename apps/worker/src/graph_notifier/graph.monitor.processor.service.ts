@@ -7,6 +7,7 @@ import { MILLISECONDS_PER_SECOND } from 'time-constants';
 import { RegistryError } from '@polkadot/types/types';
 import axios from 'axios';
 import { MessageSourceId, SchemaId } from '@frequency-chain/api-augment/interfaces';
+import { Mutex } from 'async-mutex';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { AsyncDebouncerService, GraphChangeNotificationDto, GraphStateManager, ProviderGraphUpdateJob, QueueConstants, SECONDS_PER_BLOCK } from '../../../../libs/common/src';
 import { BaseConsumer } from '../BaseConsumer';
@@ -18,6 +19,8 @@ import { BlockchainService } from '../../../../libs/common/src/blockchain/blockc
 @Processor(QueueConstants.GRAPH_CHANGE_NOTIFY_QUEUE)
 export class GraphNotifierService extends BaseConsumer {
   private asyncDebouncerService: AsyncDebouncerService;
+
+  public notifierMutex = new Mutex();
 
   constructor(
     @InjectRedis() private cacheManager: Redis,
@@ -32,8 +35,11 @@ export class GraphNotifierService extends BaseConsumer {
   }
 
   async process(job: Job<ITxMonitorJob, any, string>): Promise<any> {
-    this.logger.log(`Processing job ${job.id} of type ${job.name}`);
+    // Acquire a mutex lock to prevent multiple jobs from processing at the same time
+    this.logger.debug(`Acquiring mutex for job ${job.id}`);
+    const release = await this.notifierMutex.acquire();
     try {
+      this.logger.log(`Processing job ${job.id} of type ${job.name}`);
       const numberBlocksToParse = BlockchainConstants.NUMBER_BLOCKS_TO_CRAWL;
       const txCapacityEpoch = job.data.epoch;
       const previousKnownBlockNumber = (await this.blockchainService.getBlock(job.data.lastFinalizedBlockHash)).block.header.number.toBigInt();
@@ -109,12 +115,14 @@ export class GraphNotifierService extends BaseConsumer {
     } catch (e) {
       this.logger.error(e);
       throw e;
+    } finally {
+      release();
     }
   }
 
   private async removeSuccessJobs(referenceId: string): Promise<void> {
-    this.logger.debug(`Removing success jobs for ${referenceId}`);
-    this.changeRequestQueue.remove(referenceId);
+    // this.logger.debug(`Removing success jobs for ${referenceId}`);
+    // this.changeRequestQueue.remove(referenceId);
     this.reconnectionQueue.remove(referenceId);
   }
 

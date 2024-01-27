@@ -10,6 +10,7 @@ import { ISubmittableResult } from '@polkadot/types/types';
 import { MILLISECONDS_PER_SECOND } from 'time-constants';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { SchedulerRegistry } from '@nestjs/schedule';
+import { Mutex } from 'async-mutex';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { QueueConstants, NonceService } from '../../../../libs/common/src';
 import { BaseConsumer } from '../BaseConsumer';
@@ -28,6 +29,8 @@ const CAPACITY_EPOCH_TIMEOUT_NAME = 'capacity_check';
 @Processor(QueueConstants.GRAPH_CHANGE_PUBLISH_QUEUE)
 export class GraphUpdatePublisherService extends BaseConsumer {
   private capacityExhausted = false;
+
+  public processMutex = new Mutex();
 
   public async onApplicationBootstrap() {
     await this.checkCapacity();
@@ -59,11 +62,14 @@ export class GraphUpdatePublisherService extends BaseConsumer {
    * @returns A promise that resolves when the job is processed.
    */
   async process(job: Job<GraphUpdateJob, any, string>): Promise<any> {
-    this.logger.log(`Processing job ${job.id} of type ${job.name}`);
+    // Acquire a lock to prevent multiple jobs from processing at the same time
+    this.logger.debug(`Acquiring lock for job ${job.id}`);
+    const release = await this.processMutex.acquire();
     let statefulStorageTxHash: Hash = {} as Hash;
-    const lastFinalizedBlockHash = await this.blockchainService.getLatestFinalizedBlockHash();
-    const currentCapacityEpoch = await this.blockchainService.getCurrentCapacityEpoch();
     try {
+      this.logger.log(`Processing job ${job.id} of type ${job.name}`);
+      const lastFinalizedBlockHash = await this.blockchainService.getLatestFinalizedBlockHash();
+      const currentCapacityEpoch = await this.blockchainService.getCurrentCapacityEpoch();
       switch (job.data.update.type) {
         case 'PersistPage': {
           let payloadData: number[] = [];
@@ -98,7 +104,7 @@ export class GraphUpdatePublisherService extends BaseConsumer {
           break;
       }
 
-      this.logger.debug(`job: ${JSON.stringify(job, null, 2)}`);
+      this.logger.debug(`successful job: ${JSON.stringify(job, null, 2)}`);
 
       // Add a job to the graph change notify queue
       const txMonitorJob: ITxMonitorJob = {
@@ -110,6 +116,7 @@ export class GraphUpdatePublisherService extends BaseConsumer {
       };
       const blockDelay = SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND;
 
+      this.logger.debug(`Adding job to graph change notify queue: ${txMonitorJob.id}`);
       this.graphChangeNotifyQueue.add(`Graph Change Notify Job - ${txMonitorJob.id}`, txMonitorJob, {
         delay: blockDelay,
       });
@@ -137,6 +144,7 @@ export class GraphUpdatePublisherService extends BaseConsumer {
       throw error;
     } finally {
       await this.checkCapacity();
+      release();
     }
   }
 
@@ -149,7 +157,7 @@ export class GraphUpdatePublisherService extends BaseConsumer {
    * @throws Error if the transaction hash is undefined or if there is an error processing the batch.
    */
   async processSingleBatch(providerKeys: KeyringPair, tx: SubmittableExtrinsic<'rxjs', ISubmittableResult>): Promise<Hash> {
-    this.logger.debug(`Submitting tx of size ${tx.length}`);
+    this.logger.debug(`Submitting tx of size ${tx.length}, nonce:${tx.nonce}, method: ${tx.method.section}.${tx.method.method}`);
     try {
       const ext = this.blockchainService.createExtrinsic(
         { pallet: 'frequencyTxPayment', extrinsic: 'payWithCapacity' },
@@ -158,6 +166,7 @@ export class GraphUpdatePublisherService extends BaseConsumer {
         tx,
       );
       const nonce = await this.nonceService.getNextNonce();
+      this.logger.debug(`Capacity Wrapped Extrinsic: ${ext}, nonce:${nonce}`);
       const [txHash, _] = await ext.signAndSend(nonce);
       if (!txHash) {
         throw new Error('Tx hash is undefined');
