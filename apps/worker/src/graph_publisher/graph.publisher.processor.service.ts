@@ -183,10 +183,10 @@ export class GraphUpdatePublisherService extends BaseConsumer {
       }
 
       if (outOfCapacity) {
-        this.logger.debug('Capacity Exhausted: Pausing graph change publish queue and setting timeout');
-
         await this.graphChangePublishQueue.pause();
         const blocksRemaining = capacityInfo.nextEpochStart - capacityInfo.currentBlockNumber;
+        const epochTimeout = blocksRemaining * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND;
+        this.logger.warn(`Capacity Exhausted: Pausing graph change publish queue until next epoch: ${epochTimeout / 1000} seconds`);
         try {
           // Check if a timeout with the same name already exists
           if (this.schedulerRegistry.doesExist('timeout', CAPACITY_EPOCH_TIMEOUT_NAME)) {
@@ -197,14 +197,14 @@ export class GraphUpdatePublisherService extends BaseConsumer {
           // Add the new timeout
           this.schedulerRegistry.addTimeout(
             CAPACITY_EPOCH_TIMEOUT_NAME,
-            setTimeout(() => this.checkCapacity(), blocksRemaining * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND),
+            setTimeout(() => this.checkCapacity(), epochTimeout),
           );
         } catch (err) {
           // Handle any errors
           console.error(err);
         }
       } else {
-        this.logger.debug('Capacity Refilled: Resuming graph change publish queue and clearing timeout');
+        this.logger.verbose('Capacity Available: Resuming graph change publish queue and clearing timeout');
         // Get the failed jobs and check if they failed due to capacity
         const failedJobs = await this.graphChangePublishQueue.getFailed();
         const capacityFailedJobs = failedJobs.filter((job) => job.failedReason?.includes('1010: Invalid Transaction: Inability to pay some fees'));
