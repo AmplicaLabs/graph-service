@@ -57,11 +57,11 @@ describe('Graph Service E2E request verification!', () => {
     it('Two Valid public graph update requests should work', async () => {
       const validGraphChangeRequests: ProviderGraphDto[] = [
         {
-          dsnpId: '2',
+          dsnpId: '4',
           connections: {
             data: [
               {
-                dsnpId: '1',
+                dsnpId: '5',
                 privacyType: PrivacyType.Public,
                 direction: Direction.ConnectionTo,
                 connectionType: ConnectionType.Follow,
@@ -70,7 +70,7 @@ describe('Graph Service E2E request verification!', () => {
           },
         },
         {
-          dsnpId: '2',
+          dsnpId: '6',
           connections: {
             data: [
               {

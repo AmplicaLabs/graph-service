@@ -1,5 +1,4 @@
 import { describe, it, beforeEach, jest, expect } from '@jest/globals';
-import { PalletCapacityEpochInfo } from '@polkadot/types/lookup';
 import { u32 } from '@polkadot/types';
 import { BlockchainService } from './blockchain.service';
 import { ConfigService } from '../config/config.service';

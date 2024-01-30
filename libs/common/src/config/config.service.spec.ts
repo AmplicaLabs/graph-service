@@ -56,7 +56,6 @@ describe('GraphSericeConfig', () => {
     HEALTH_CHECK_MAX_RETRIES: undefined,
     PAGE_SIZE: undefined,
     CAPACITY_LIMIT: undefined,
-    DEAD_LETTER_JOB_PREFIX: undefined,
   };
 
   beforeAll(() => {
@@ -203,10 +202,6 @@ describe('GraphSericeConfig', () => {
 
     it('should get capacity limit', () => {
       expect(graphServiceConfig.getCapacityLimit()).toStrictEqual(JSON.parse(ALL_ENV.CAPACITY_LIMIT!));
-    });
-
-    it('should get dead letter job prefix', () => {
-      expect(graphServiceConfig.getDeadLetterPrefix()).toStrictEqual(ALL_ENV.DEAD_LETTER_JOB_PREFIX);
     });
   });
 });

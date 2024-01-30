@@ -8,9 +8,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { SubmittableExtrinsic } from '@polkadot/api-base/types';
 import { ISubmittableResult } from '@polkadot/types/types';
 import { MILLISECONDS_PER_SECOND } from 'time-constants';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { SchedulerRegistry } from '@nestjs/schedule';
-import { Mutex } from 'async-mutex';
 import { ConfigService } from '../../../../libs/common/src/config/config.service';
 import { QueueConstants, NonceService } from '../../../../libs/common/src';
 import { BaseConsumer } from '../BaseConsumer';
@@ -30,8 +28,6 @@ const CAPACITY_EPOCH_TIMEOUT_NAME = 'capacity_check';
 export class GraphUpdatePublisherService extends BaseConsumer {
   private capacityExhausted = false;
 
-  public processMutex = new Mutex();
-
   public async onApplicationBootstrap() {
     await this.checkCapacity();
   }
@@ -50,7 +46,6 @@ export class GraphUpdatePublisherService extends BaseConsumer {
     private configService: ConfigService,
     private blockchainService: BlockchainService,
     private nonceService: NonceService,
-    // private emitter: EventEmitter2,
     private schedulerRegistry: SchedulerRegistry,
   ) {
     super();
@@ -62,9 +57,6 @@ export class GraphUpdatePublisherService extends BaseConsumer {
    * @returns A promise that resolves when the job is processed.
    */
   async process(job: Job<GraphUpdateJob, any, string>): Promise<any> {
-    // Acquire a lock to prevent multiple jobs from processing at the same time
-    this.logger.debug(`Acquiring lock for job ${job.id}`);
-    const release = await this.processMutex.acquire();
     let statefulStorageTxHash: Hash = {} as Hash;
     try {
       this.logger.log(`Processing job ${job.id} of type ${job.name}`);
@@ -121,30 +113,10 @@ export class GraphUpdatePublisherService extends BaseConsumer {
         delay: blockDelay,
       });
     } catch (error: any) {
-      // If error message starts with `1010: Invalid Transaction: Inability to pay some fees, e.g. account balance too low`
-      // then remove the job from the failed queue and add it to the paused queue
-      if (error.message.startsWith('1010: Invalid Transaction: Inability to pay some fees')) {
-        this.logger.error(`Job ${job.data.referenceId} failed (attempts=${job.attemptsMade})`);
-        const isDeadLetter = job.data.referenceId?.search(this.configService.getDeadLetterPrefix()) === 0;
-        if (!isDeadLetter && job.attemptsMade === 1 && job.data.referenceId) {
-          this.logger.debug(`Adding delay to job ${job.data.referenceId}`);
-          const deadLetterDelayedJobId = `${this.configService.getDeadLetterPrefix()}${job.data.referenceId}`;
-          // Add this job with priority to the paused queue
-          this.graphChangePublishQueue.remove(deadLetterDelayedJobId);
-          this.graphChangePublishQueue.remove(job.data.referenceId);
-          this.graphChangePublishQueue.add(`Graph Change Publish Job - ${job.data.referenceId}`, job.data, {
-            jobId: deadLetterDelayedJobId,
-            delay: 1000,
-            priority: 1,
-          });
-        }
-      }
-      // Failed transaction due to low capacity errors will be caught here and checkCapacity() will pause the queues
       this.logger.error(error);
       throw error;
     } finally {
       await this.checkCapacity();
-      release();
     }
   }
 
@@ -179,47 +151,6 @@ export class GraphUpdatePublisherService extends BaseConsumer {
     }
   }
 
-  // @OnEvent('capacity.exhausted', { async: true, promisify: true })
-  // private async handleCapacityExhausted() {
-  //   this.logger.debug('Received capacity.exhausted event');
-  //   this.capacityExhausted = true;
-  //   await this.graphChangePublishQueue.pause();
-  //   const capacityLimit = this.configService.getCapacityLimit();
-  //   const capacityInfo = await this.blockchainService.capacityInfo(this.configService.getProviderId());
-
-  //   await this.graphChangePublishQueue.pause();
-  //   const blocksRemaining = capacityInfo.nextEpochStart - capacityInfo.currentBlockNumber;
-  //   try {
-  //     // Check if a timeout with the same name already exists
-  //     if (this.schedulerRegistry.doesExist('timeout', CAPACITY_EPOCH_TIMEOUT_NAME)) {
-  //       // If it does, delete it
-  //       this.schedulerRegistry.deleteTimeout(CAPACITY_EPOCH_TIMEOUT_NAME);
-  //     }
-
-  //     // Add the new timeout
-  //     this.schedulerRegistry.addTimeout(
-  //       CAPACITY_EPOCH_TIMEOUT_NAME,
-  //       setTimeout(() => this.checkCapacity(), blocksRemaining * SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND),
-  //     );
-  //   } catch (err) {
-  //     // Handle any errors
-  //     console.error(err);
-  //   }
-  // }
-
-  // @OnEvent('capacity.refilled', { async: true, promisify: true })
-  // private async handleCapacityRefilled() {
-  //   this.logger.debug('Received capacity.refilled event');
-  //   this.capacityExhausted = false;
-  //   try {
-  //     this.schedulerRegistry.deleteTimeout(CAPACITY_EPOCH_TIMEOUT_NAME);
-  //   } catch (err) {
-  //     // ignore
-  //   }
-
-  //   await this.graphChangePublishQueue.resume();
-  // }
-
   private async checkCapacity(): Promise<void> {
     try {
       const capacityLimit = this.configService.getCapacityLimit();
@@ -247,7 +178,6 @@ export class GraphUpdatePublisherService extends BaseConsumer {
       }
 
       if (outOfCapacity) {
-        // await this.emitter.emitAsync('capacity.exhausted');
         this.logger.debug('Capacity Exhausted: Pausing graph change publish queue and setting timeout');
         this.capacityExhausted = true;
 
@@ -270,9 +200,18 @@ export class GraphUpdatePublisherService extends BaseConsumer {
           console.error(err);
         }
       } else {
-        // await this.emitter.emitAsync('capacity.refilled');
-        this.logger.debug('Received capacity.refilled event');
+        this.logger.debug('Capacity Refilled: Resuming graph change publish queue and clearing timeout');
         this.capacityExhausted = false;
+        // Get the failed jobs and check if they failed due to capacity
+        const failedJobs = await this.graphChangePublishQueue.getFailed();
+        const capacityFailedJobs = failedJobs.filter((job) => job.failedReason?.includes('1010: Invalid Transaction: Inability to pay some fees'));
+        // Retry the failed jobs
+        await Promise.all(
+          capacityFailedJobs.map(async (job) => {
+            this.logger.debug(`Retrying job ${job.id}`);
+            job.retry();
+          }),
+        );
         try {
           this.schedulerRegistry.deleteTimeout(CAPACITY_EPOCH_TIMEOUT_NAME);
         } catch (err) {

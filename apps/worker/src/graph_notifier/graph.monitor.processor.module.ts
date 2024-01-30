@@ -53,16 +53,16 @@ import { BlockchainService } from '../../../../libs/common/src/blockchain/blockc
       {
         name: QueueConstants.GRAPH_CHANGE_NOTIFY_QUEUE,
         defaultJobOptions: {
-          removeOnComplete: 1000,
-          removeOnFail: 5000,
+          removeOnComplete: true,
+          removeOnFail: false,
           attempts: 3,
         },
       },
       {
         name: QueueConstants.GRAPH_CHANGE_REQUEST_QUEUE,
         defaultJobOptions: {
-          removeOnComplete: 1000,
-          removeOnFail: 5000,
+          removeOnComplete: true,
+          removeOnFail: false,
           attempts: 3,
         },
       },

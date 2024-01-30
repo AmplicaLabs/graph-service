@@ -12,9 +12,6 @@
             "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",
-            "env": {
-                "DEBUG": "app:GraphUpdatePublisherModule",
-            }
         },
 		{
             "type": "node",

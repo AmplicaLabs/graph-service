@@ -72,24 +72,24 @@ import { GraphStateManager, QueueConstants } from '../../../libs/common/src';
       {
         name: QueueConstants.GRAPH_CHANGE_REQUEST_QUEUE,
         defaultJobOptions: {
-          removeOnComplete: 1000,
-          removeOnFail: 5000,
+          removeOnComplete: false,
+          removeOnFail: false,
           attempts: 3,
         },
       },
       {
         name: QueueConstants.GRAPH_CHANGE_PUBLISH_QUEUE,
         defaultJobOptions: {
-          removeOnComplete: 1000,
-          removeOnFail: 5000,
+          removeOnComplete: true,
+          removeOnFail: false,
           attempts: 1,
         },
       },
       {
         name: QueueConstants.GRAPH_CHANGE_NOTIFY_QUEUE,
         defaultJobOptions: {
-          removeOnComplete: 1000,
-          removeOnFail: 5000,
+          removeOnComplete: true,
+          removeOnFail: false,
           attempts: 3,
         },
       },

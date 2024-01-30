@@ -28,7 +28,6 @@ export interface ConfigEnvironmentVariables {
   HEALTH_CHECK_MAX_RETRIES: number;
   PAGE_SIZE: number;
   CAPACITY_LIMIT: number;
-  DEAD_LETTER_JOB_PREFIX: string;
 }
 
 /// Config service to get global app and provider-specific config values.
@@ -133,9 +132,5 @@ export class ConfigService {
 
   public getCapacityLimit(): ICapacityLimit {
     return this.capacityLimit;
-  }
-
-  public getDeadLetterPrefix(): string {
-    return this.nestConfigService.get<string>('DEAD_LETTER_JOB_PREFIX')!;
   }
 }

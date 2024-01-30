@@ -52,15 +52,15 @@ import { GraphUpdatePublisherService } from './graph.publisher.processor.service
       {
         name: QueueConstants.GRAPH_CHANGE_NOTIFY_QUEUE,
         defaultJobOptions: {
-          removeOnComplete: 1000,
-          removeOnFail: 5000,
+          removeOnComplete: true,
+          removeOnFail: false,
         },
       },
       {
         name: QueueConstants.GRAPH_CHANGE_PUBLISH_QUEUE,
         defaultJobOptions: {
-          removeOnComplete: 1000, // For testing, we want to keep the job in the queue
-          removeOnFail: 5000,
+          removeOnComplete: true,
+          removeOnFail: false,
         },
       },
     ),
