@@ -26,8 +26,6 @@ const CAPACITY_EPOCH_TIMEOUT_NAME = 'capacity_check';
 @Injectable()
 @Processor(QueueConstants.GRAPH_CHANGE_PUBLISH_QUEUE)
 export class GraphUpdatePublisherService extends BaseConsumer {
-  private capacityExhausted = false;
-
   public async onApplicationBootstrap() {
     await this.checkCapacity();
   }
@@ -151,6 +149,13 @@ export class GraphUpdatePublisherService extends BaseConsumer {
     }
   }
 
+  /**
+   * Checks the capacity of the graph publisher and takes appropriate actions based on the capacity status.
+   * If the capacity is exhausted, it pauses the graph change publish queue and sets a timeout to check the capacity again.
+   * If the capacity is refilled, it resumes the graph change publish queue and clears the timeout.
+   * If any jobs failed due to low balance/no capacity, it retries them.
+   * If any error occurs during the capacity check, it logs the error.
+   */
   private async checkCapacity(): Promise<void> {
     try {
       const capacityLimit = this.configService.getCapacityLimit();
@@ -179,7 +184,6 @@ export class GraphUpdatePublisherService extends BaseConsumer {
 
       if (outOfCapacity) {
         this.logger.debug('Capacity Exhausted: Pausing graph change publish queue and setting timeout');
-        this.capacityExhausted = true;
 
         await this.graphChangePublishQueue.pause();
         const blocksRemaining = capacityInfo.nextEpochStart - capacityInfo.currentBlockNumber;
@@ -201,7 +205,6 @@ export class GraphUpdatePublisherService extends BaseConsumer {
         }
       } else {
         this.logger.debug('Capacity Refilled: Resuming graph change publish queue and clearing timeout');
-        this.capacityExhausted = false;
         // Get the failed jobs and check if they failed due to capacity
         const failedJobs = await this.graphChangePublishQueue.getFailed();
         const capacityFailedJobs = failedJobs.filter((job) => job.failedReason?.includes('1010: Invalid Transaction: Inability to pay some fees'));
