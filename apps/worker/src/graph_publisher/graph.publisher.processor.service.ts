@@ -1,6 +1,6 @@
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import { InjectQueue, Processor } from '@nestjs/bullmq';
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { Job, Queue } from 'bullmq';
 import Redis from 'ioredis';
 import { Hash } from '@polkadot/types/interfaces';
@@ -25,17 +25,18 @@ const CAPACITY_EPOCH_TIMEOUT_NAME = 'capacity_check';
  */
 @Injectable()
 @Processor(QueueConstants.GRAPH_CHANGE_PUBLISH_QUEUE)
-export class GraphUpdatePublisherService extends BaseConsumer {
+export class GraphUpdatePublisherService extends BaseConsumer implements OnApplicationShutdown {
   public async onApplicationBootstrap() {
     await this.checkCapacity();
   }
 
-  // public async onModuleDestroy() {
-  //   try {
-  //     this.schedulerRegistry.deleteTimeout(CAPACITY_EPOCH_TIMEOUT_NAME);
-  //   } catch (err) {
-  //     // ignore
-  // }
+  public async onApplicationShutdown(signal?: string | undefined): Promise<void> {
+    try {
+      this.schedulerRegistry.deleteTimeout(CAPACITY_EPOCH_TIMEOUT_NAME);
+    } catch (err) {
+      // ignore
+    }
+  }
 
   constructor(
     @InjectRedis() private cacheManager: Redis,
