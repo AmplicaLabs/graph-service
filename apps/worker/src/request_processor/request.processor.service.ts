@@ -38,10 +38,10 @@ export class RequestProcessorService extends BaseConsumer {
 
   async process(job: Job<ProviderGraphUpdateJob, any, string>): Promise<void> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
+    const blockDelay = SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND;
     try {
       const lastProcessedDsnpId = await this.cacheManager.get(QueueConstants.LAST_PROCESSED_DSNP_ID_KEY);
       if (lastProcessedDsnpId && lastProcessedDsnpId === job.data.dsnpId) {
-        const blockDelay = SECONDS_PER_BLOCK * MILLISECONDS_PER_SECOND;
         this.logger.debug(`Delaying processing of job ${job.id} for ${blockDelay}ms`);
         // eslint-disable-next-line no-await-in-loop
         await new Promise((r) => {
@@ -81,7 +81,7 @@ export class RequestProcessorService extends BaseConsumer {
 
       const reImported = await this.graphStateManager.importBundles(dsnpUserId, job.data.graphKeyPairs ?? []);
       if (reImported) {
-        this.cacheManager.set(QueueConstants.LAST_PROCESSED_DSNP_ID_KEY, job.data.dsnpId);
+        this.cacheManager.setex(QueueConstants.LAST_PROCESSED_DSNP_ID_KEY, job.data.dsnpId, SECONDS_PER_BLOCK);
         this.logger.debug(`Re-imported bundles for ${dsnpUserId.toString()}`);
         // eslint-disable-next-line no-await-in-loop
         const userGraphExists = this.graphStateManager.graphContainsUser(dsnpUserId.toString());
