@@ -9,12 +9,6 @@ services:
       - redis_data:/data/redis
     networks:
       - graph-service-service
-    container_name: redis
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   frequency:
     image: frequencychain/instant-seal-node:latest
@@ -27,12 +21,6 @@ services:
     container_name: frequency
     volumes:
       - chainstorage:/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9944/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
 
   frequency-interval:
     image: frequencychain/instant-seal-node:latest
@@ -46,12 +34,6 @@ services:
     container_name: frequency-interval-node
     volumes:
       - chainstorage:/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9944/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
 
   frequency-manual:
     image: frequencychain/instant-seal-node:latest
@@ -65,11 +47,6 @@ services:
     container_name: frequency-manual-node
     volumes:
       - chainstorage:/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9944/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   graph-service-api:
     image: amplicalabs/graph-service-service:api-0.0.2-rc1
@@ -85,13 +62,10 @@ services:
     volumes:
       - ./:/app
     depends_on:
-      redis:
-        condition: service_healthy
-      frequency:
-        condition: service_healthy
+      - redis
+      - frequency
     networks:
       - graph-service-service
-    container_name: graph-service-api
     profiles: ['instant']
 
   graph-service-worker:
@@ -106,10 +80,8 @@ services:
     volumes:
       - ./:/app
     depends_on:
-      redis:
-        condition: service_healthy
-      frequency:
-        condition: service_healthy
+      - redis
+      - frequency
     networks:
       - graph-service-service
     profiles: ['instant'] 
