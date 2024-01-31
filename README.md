@@ -48,21 +48,12 @@ A service enabling easy interaction with DSNP private and public graphs on Frequ
 1. Start redis and frequency with instant profile.
 
    ```bash
-   docker-compose -f docker-compose.dev.yaml --profile instant up frequency redis
+   docker-compose --profile instant up
    ```
 
    This will start Frequency and Redis containers.
 
-2. Using nest cli start the api and worker.
-
-   ```bash
-   npx nest start api
-   npx nest start worker
-   ```
-
-   This will start the api and worker in watch mode.
-
-3. Run a graph scenario from [frequency scenario templates](https://github.com/AmplicaLabs/frequency-scenario-template/tree/graph-service-setup). Note the use of branch `graph-service-setup` of the frequency scenario template repo.
+2. Run a graph scenario from [frequency scenario templates](https://github.com/AmplicaLabs/frequency-scenario-template/tree/graph-service-setup). Note the use of branch `graph-service-setup` of the frequency scenario template repo.
 
    ```bash
     git clone https://github.com/AmplicaLabs/frequency-scenario-template.git
@@ -73,9 +64,9 @@ A service enabling easy interaction with DSNP private and public graphs on Frequ
 
     This will create `//Ferdie` as provider along with DSNPIds 2,3,4,5 and 6 as users. The template will also add a public key for each user in itemized storage needed for private graph operations.
 
-4. Check the job in [BullUI](http://0.0.0.0:3000/queues/), to monitor job progress based on defined tests.
+3. Check the job in [BullUI](http://0.0.0.0:3000/queues/), to monitor job progress based on defined tests.
 
-5. Run the tests
+4. Run the tests
 
    ```bash
    npm run test:e2e
@@ -83,4 +74,4 @@ A service enabling easy interaction with DSNP private and public graphs on Frequ
 
    This will run the tests in `apps/api/test` folder.
 
-6. Check e2e test file for more details on the test.
+5. Check e2e test file for more details on the test.
