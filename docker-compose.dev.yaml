@@ -58,8 +58,6 @@ services:
       - .env.dev
     environment:
       - START_PROCESS=api
-      - REDIS_URL=redis://redis:6379
-      - FREQUENCY_URL=http://frequency:9944
     volumes:
       - ./:/app
     depends_on:
@@ -78,8 +76,6 @@ services:
       - .env.dev
     environment:
       - START_PROCESS=worker
-      - REDIS_URL=redis://redis:6379
-      - FREQUENCY_URL=http://frequency:9944
     volumes:
       - ./:/app
     depends_on:
