@@ -51,7 +51,7 @@ A service enabling easy interaction with DSNP private and public graphs on Frequ
    docker-compose --profile instant up
    ```
 
-   This will start Frequency and Redis containers.
+   This will start Frequency, Redis, and Graph Service containers.  
 
 2. Run a graph scenario from [frequency scenario templates](https://github.com/AmplicaLabs/frequency-scenario-template/tree/graph-service-setup). Note the use of branch `graph-service-setup` of the frequency scenario template repo.
 
