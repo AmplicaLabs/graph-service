@@ -45,6 +45,8 @@ A service enabling easy interaction with DSNP private and public graphs on Frequ
 
 ## Running E2E tests
 
+Note: using [docker compose file](docker-compose.yaml) with `instant` profile to start the services. This will start the services in development mode.
+
 1. Start redis and frequency with instant profile.
 
    ```bash
