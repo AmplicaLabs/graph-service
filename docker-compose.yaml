@@ -49,7 +49,7 @@ services:
       - chainstorage:/data
 
   api:
-    image: amplicalabs/graph-service-service:api-0.0.2-rc1
+    image: amplicalabs/graph-service-service:api-0.0.2-rc2
     platform: linux/amd64
     ports:
       - 3000:3000
@@ -70,7 +70,7 @@ services:
     profiles: ['instant']
 
   worker:
-    image: amplicalabs/graph-service-service:api-0.0.2-rc1
+    image: amplicalabs/graph-service-service:api-0.0.2-rc2
     platform: linux/amd64
     env_file:
       - .env.dev
