@@ -53,7 +53,7 @@ A service enabling easy interaction with DSNP private and public graphs on Frequ
 
    This will start Frequency and Redis
 
-2. Run a graph scenario from [frequency scenario templates](https://github.com/AmplicaLabs/frequency-scenario-template/tree/graph-service-setup). Note the use of branch `graph-service-setup` of the frequency scenario template repo.
+2. Once [Frequency](https://polkadot.js.org/apps/?rpc=ws%3A%2F%2F127.0.0.1%3A9944#/explorer) is up. Run a graph scenario from [frequency scenario templates](https://github.com/AmplicaLabs/frequency-scenario-template/tree/graph-service-setup). Note the use of branch `graph-service-setup` of the frequency scenario template repo.
 
    ```bash
     git clone https://github.com/AmplicaLabs/frequency-scenario-template.git
@@ -64,7 +64,7 @@ A service enabling easy interaction with DSNP private and public graphs on Frequ
 
     This will create `//Ferdie` as provider along with DSNPIds 2,3,4,5 and 6 as users. The template will also add a public key for each user in itemized storage needed for private graph operations.
 
-3. Once [Frequency](https://polkadot.js.org/apps/?rpc=ws%3A%2F%2F127.0.0.1%3A9944#/explorer) is up, run the following command to start the graph service.
+3. Run the following command to start the graph service api and worker containers.
 
    ```bash
    docker-compose --profile instant up -d api worker
