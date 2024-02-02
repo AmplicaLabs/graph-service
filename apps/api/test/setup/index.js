@@ -1,8 +1,15 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { Keyring } from '@polkadot/keyring';
 import { waitReady } from '@polkadot/wasm-crypto';
-import { u8aToHex, u8aWrapBytes } from '@polkadot/util';
+import { _0n, hexToU8a, u8aToHex, u8aWrapBytes } from '@polkadot/util';
 import { userPrivateConnections, userPrivateFollows, publicKey, userPublicFollows } from '@dsnp/frequency-schemas/dsnp';
+import {
+  DsnpVersion,
+  Graph,
+  EnvironmentType,
+  ConnectionType,
+  PrivacyType,
+} from '@dsnp/graph-sdk';
 
 const FREQUENCY_URL = process.env.FREQUENCY_URL || 'ws://127.0.0.1:9944';
 
@@ -16,6 +23,7 @@ const sendStatusCb =
     if (status.isInBlock || status.isFinalized) {
       const msaCreated = events.map(({ event }) => event).find((event) => event.method === 'MsaCreated');
       const schemaCreated = events.map(({ event }) => event).find((event) => event.method === 'SchemaCreated');
+      const itemizedPageUpdated = events.map(({ event }) => event).find((event) => event.method === 'ItemizedPageUpdated');
       if (msaCreated) {
         resolve(msaCreated.data.msaId);
       } else {
@@ -24,6 +32,12 @@ const sendStatusCb =
       if (schemaCreated) {
         console.log('Schema Created: ' + schemaCreated.data);
         resolve(schemaCreated.data.schemaId);
+      } else {
+        resolve();
+      }
+      if (itemizedPageUpdated) {
+        console.log('Itemized Page Updated: ' + itemizedPageUpdated.data);
+        resolve(itemizedPageUpdated.data);
       } else {
         resolve();
       }
@@ -89,16 +103,79 @@ async function main() {
   await new Promise((resolve) => sudoTx.signAndSend(alice, { nonce: currentNonce }, sendStatusCb(resolve)));
   currentNonce++;
   console.log('Public Key Schema created');
-  
   // Delegations
   const delegators = ['//Bob', '//Charlie', '//Dave', '//Eve', '//Ferdie'];
-  for (let i = 0; i < 20; i++) {
-    delegators.push(`//Bob//${i}`);
-  }
   const create = createViaDelegation(api, alice);
-  await Promise.all(delegators.map((delegator, i) => create(delegator, currentNonce + i)));
+  await Promise.all(delegators.map((delegator, i) => create(delegator, currentNonce++)));
+  let msaUsers1to6 = ['2', '3', '4', '5', '6'];
+  let graphPubKey = hexToU8a('0x993052b57e8695d9124964f69f624fcc2080be7525c65b1acd089dff235a0e02');
+  // let graphPrivKey = hexToU8a('0xf74d39829ac4a814048cbda6b35ee1c3c16fbd2b88f97d552aa344bffb5207a5');
+  // Add public to users
+  const environment = { environmentType: EnvironmentType.Dev, config: getTestConfig(4) };
+  const graph = new Graph(environment);
+
+  // eslint-disable-next-line no-restricted-syntax
+  for (const msaId of msaUsers1to6) {
+    const actions = [
+      {
+        type: 'AddGraphKey',
+        ownerDsnpUserId: msaId.toString(),
+        newPublicKey: graphPubKey
+      },
+    ];
+    graph.applyActions(actions);
+    const keyExport = graph.exportUserGraphUpdates(msaId.toString());
+    const keyActions = [
+      {
+        Add: {
+          data: Array.from(keyExport[0].payload),
+        },
+      },
+    ];
+    let tx = api.tx.statefulStorage.applyItemActions(msaId, 4, 0, keyActions);
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise((resolve) => tx.signAndSend(alice, {
+      nonce: currentNonce
+    }, sendStatusCb(resolve)));
+    currentNonce++;
+  }
+  const capacityResult  = (await api.query.capacity.capacityLedger(1));
+  const capacity = capacityResult.unwrapOr({ totalCapacityIssued: 0n });
+  const stakeAmount = 2000000000000000n - (typeof capacity.totalCapacityIssued === 'bigint' ? capacity.totalCapacityIssued : capacity.totalCapacityIssued.toBigInt());
+  await api.tx.capacity.stake(1, stakeAmount).signAndSend(alice, { nonce: currentNonce });
   
-  console.log('Create Provider, Users, DSNP Graph Schemas, and Delegations complete. Exiting...');
+  console.log('Create Provider 1 as Alice and Delegator 2, 3, 4, 5, 6');
+  console.log('Public keys added to delegators');
+  console.log('Staked capacity to provider: ' + stakeAmount);
+  console.log('Setup complete');
+}
+
+function getTestConfig(keySchemaId) {
+  const config = {};
+  config.sdkMaxStaleFriendshipDays = 100;
+  config.maxPageId = 100;
+  config.dsnpVersions = [DsnpVersion.Version1_0];
+  config.maxGraphPageSizeBytes = 100;
+  config.maxKeyPageSizeBytes = 100;
+  const schemaMap = {};
+  schemaMap[1] = {
+    dsnpVersion: DsnpVersion.Version1_0,
+    connectionType: ConnectionType.Follow,
+    privacyType: PrivacyType.Public,
+  };
+  schemaMap[2] = {
+    dsnpVersion: DsnpVersion.Version1_0,
+    connectionType: ConnectionType.Follow,
+    privacyType: PrivacyType.Private,
+  };
+  schemaMap[3] = {
+    dsnpVersion: DsnpVersion.Version1_0,
+    connectionType: ConnectionType.Friendship,
+    privacyType: PrivacyType.Private,
+  };
+  config.schemaMap = schemaMap;
+  config.graphPublicKeySchemaId = keySchemaId;
+  return config;
 }
 
 main()
