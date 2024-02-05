@@ -1,6 +1,6 @@
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import { InjectQueue, Processor } from '@nestjs/bullmq';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Job, Queue } from 'bullmq';
 import Redis from 'ioredis';
 import { ConnectionType, ImportBundleBuilder, ConnectAction, DsnpKeys, DisconnectAction, Action } from '@dsnp/graph-sdk';
@@ -22,7 +22,7 @@ import {
 import { BlockchainService } from '../../../../libs/common/src/blockchain/blockchain.service';
 import { Direction } from '../../../../libs/common/src/dtos/direction.dto';
 import { SECONDS_PER_BLOCK } from '../graph_publisher/graph.publisher.processor.service';
-
+import fs from 'fs';
 @Injectable()
 @Processor(QueueConstants.GRAPH_CHANGE_REQUEST_QUEUE)
 export class RequestProcessorService extends BaseConsumer {
@@ -34,6 +34,11 @@ export class RequestProcessorService extends BaseConsumer {
     private blockchainService: BlockchainService,
   ) {
     super();
+    cacheManager.defineCommand('updateLastProcessed', {
+      numberOfKeys: 1,
+      lua: fs.readFileSync('lua/updateLastProcessed.lua', 'utf8'),
+    });
+    this.logger = new Logger(RequestProcessorService.name);
   }
 
   async process(job: Job<ProviderGraphUpdateJob, any, string>): Promise<void> {
@@ -81,7 +86,9 @@ export class RequestProcessorService extends BaseConsumer {
 
       const reImported = await this.graphStateManager.importBundles(dsnpUserId, job.data.graphKeyPairs ?? []);
       if (reImported) {
-        this.cacheManager.setex(QueueConstants.LAST_PROCESSED_DSNP_ID_KEY, job.data.dsnpId, SECONDS_PER_BLOCK);
+        // Use lua script to update last processed dsnpId
+        // @ts-ignore
+        await this.cacheManager.updateLastProcessed(QueueConstants.LAST_PROCESSED_DSNP_ID_KEY, dsnpUserId.toString(), blockDelay);
         this.logger.debug(`Re-imported bundles for ${dsnpUserId.toString()}`);
         // eslint-disable-next-line no-await-in-loop
         const userGraphExists = this.graphStateManager.graphContainsUser(dsnpUserId.toString());
