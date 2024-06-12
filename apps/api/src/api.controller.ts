@@ -28,6 +28,7 @@ export class ApiController {
 
   // Fetch graphs for list of `dsnpIds` at optional `blockNumber`
   // Fetch graphs for list of `dsnpIds` at optional `blockNumber`
+  // TODO: change to GET??? Can we pass params to a get?
   @Put('graphs')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Post a request to fetch graphs for specified dsnpIds and blockNumber' })
