@@ -78,7 +78,10 @@ The API is responsible for handling incoming HTTP requests and the Worker is res
 <details>
   <summary>Data Store</summary>
   <ul>
-    <li><a href="https://github.com/luin/ioredis">ioredis</a></li>
+    <li><a href="https://redis.io/">Redis</a></li>
+    <ul>
+      <li><a href="https://github.com/luin/ioredis">ioredis</a></li>
+    </ul>
   </ul>
 </details>
 
@@ -196,20 +199,20 @@ Note: using [docker compose file](docker-compose.yaml) to start the services. Th
 
 #### 1. Start the Redis server container and the Frequency container. You can view the logs with your Docker setup.
 
-   ```bash
-   docker compose up -d redis frequency
-   ```
+  ```sh
+  docker compose up -d redis frequency
+  ```
 
 #### 2. Once [Frequency](https://polkadot.js.org/apps/?rpc=ws%3A%2F%2F127.0.0.1%3A9944#/explorer) is up. Run a graph setup with Alice as provider 1 and 2,3,4,5,6 as users.
 
-    ```bash
-    make setup
-    ```
+  ```sh
+  make setup
+  ```
 
 #### 3. Run the following command to start the graph service api and worker containers. This will start the account service api and worker in development mode.
 
-   ```bash
-      docker compose up -d api worker
+   ```sh
+   docker compose up -d api worker
    ```
 
 #### 4. Check the job in [BullUI](http://0.0.0.0:3000/queues/), to monitor job progress based on defined tests.
@@ -235,13 +238,13 @@ You may also view and manage the application's queue at [\<base url>/queues](htt
 ### Linting
 
 ```sh
-  npm run lint
+npm run lint
 ```
 
 ### Auto-format
 
 ```sh
-  npm run format
+npm run format
 ```
 
 <!-- CONTRIBUTING -->
