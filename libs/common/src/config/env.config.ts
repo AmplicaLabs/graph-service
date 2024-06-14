@@ -13,7 +13,7 @@ export const configModuleOptions: ConfigModuleOptions = {
     BLOCKCHAIN_SCAN_INTERVAL_MINUTES: Joi.number()
       .min(1)
       .default(3 * 60),
-    GRAPH_ENVIRONMENT_TYPE: Joi.string().required().valid('Mainnet', 'TestnetPaseo', 'Rococo', 'Dev'),
+    GRAPH_ENVIRONMENT_TYPE: Joi.string().required().valid('Mainnet', 'TestnetPaseo', 'Dev'),
     // GRAPH_ENVIRONMENT_DEV_CONFIG is optional, but if it is set, it must be a valid JSON string
     GRAPH_ENVIRONMENT_DEV_CONFIG: Joi.string().when('GRAPH_ENVIRONMENT_TYPE', {
       is: 'Dev',
