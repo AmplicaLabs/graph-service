@@ -43,7 +43,6 @@ describe('GraphSericeConfig', () => {
     RECONNECTION_SERVICE_REQUIRED: undefined,
     BLOCKCHAIN_SCAN_INTERVAL_MINUTES: undefined,
     GRAPH_ENVIRONMENT_TYPE: undefined,
-    GRAPH_ENVIRONMENT_DEV_CONFIG: undefined,
     PROVIDER_ACCOUNT_SEED_PHRASE: undefined,
     PROVIDER_ID: undefined,
     PROVIDER_BASE_URL: undefined,
@@ -87,16 +86,6 @@ describe('GraphSericeConfig', () => {
     it('invalid api port should fail', async () => {
       const { API_PORT: dummy, ...env } = ALL_ENV;
       await expect(setupConfigService({ API_PORT: -1, ...env })).rejects.toBeDefined();
-    });
-
-    it('missing graph environment dev config should fail', async () => {
-      const { GRAPH_ENVIRONMENT_TYPE: dummy, GRAPH_ENVIRONMENT_DEV_CONFIG: dummy2, ...env } = ALL_ENV;
-      await expect(setupConfigService({ GRAPH_ENVIRONMENT_TYPE: 'Dev', GRAPH_ENVIRONMENT_DEV_CONFIG: undefined, ...env })).rejects.toBeDefined();
-    });
-
-    it('invalid graph environment dev config should fail', async () => {
-      const { GRAPH_ENVIRONMENT_TYPE: dummy, GRAPH_ENVIRONMENT_DEV_CONFIG: dummy2, ...env } = ALL_ENV;
-      await expect(setupConfigService({ GRAPH_ENVIRONMENT_TYPE: 'Dev', GRAPH_ENVIRONMENT_DEV_CONFIG: 'invalid json', ...env })).rejects.toBeDefined();
     });
 
     it('missing capacity limits should fail', async () => {
@@ -149,10 +138,6 @@ describe('GraphSericeConfig', () => {
 
     it('should get graph environment type', () => {
       expect(graphServiceConfig.getGraphEnvironmentType()).toStrictEqual(ALL_ENV.GRAPH_ENVIRONMENT_TYPE);
-    });
-
-    it('should get graph environment dev config', () => {
-      expect(graphServiceConfig.getGraphEnvironmentConfig()).toStrictEqual(ALL_ENV.GRAPH_ENVIRONMENT_DEV_CONFIG);
     });
 
     it('should get provider account seed phrase', () => {
