@@ -1,5 +1,3 @@
-/* eslint-disable func-names */
-/* eslint-disable import/no-unresolved */
 /*
  * Graph Service
  * Graph Service API
@@ -12,62 +10,117 @@
  * Generator version: 7.7.0-SNAPSHOT
  */
 
-import http from 'k6/http';
-import { group, check, sleep } from 'k6';
 
-const BASE_URL = 'http://localhost:3000';
+import http from "k6/http";
+import { group, check, sleep } from "k6";
+
+export const options = {
+  vus: 100,
+  duration: '10s',
+  thresholds: {
+    checks: ['rate>=0.995'],
+    http_req_duration: ['avg<100', 'p(95)<200'],
+    http_req_failed: ['rate<0.005'],
+    http_reqs: ['rate>=256']
+  },
+  noConnectionReuse: true,
+};
+
+const BASE_URL = "http://localhost:3000";
 // Sleep duration between successive requests.
 // You might want to edit the value of this variable or remove calls to the sleep function on the script.
 const SLEEP_DURATION = 0.1;
 // Global variables should be initialized.
 
-export default function () {
-  group('/api/update-graph', () => {
-    // Request No. 1: ApiController_updateGraph
-    const url = `${BASE_URL}/api/update-graph`;
-    // TODO: edit the parameters of the request body.
-    const body = { dsnpId: 'string', connections: { data: 'list' }, graphKeyPairs: 'list' };
-    const params = { headers: { 'Content-Type': 'application/json', Accept: 'application/json' } };
-    const request = http.post(url, JSON.stringify(body), params);
 
-    check(request, {
-      'Graph update request created successfully': (r) => r.status === 201,
+export default function() {
+    group("/api/update-graph", () => {
+
+        // Request No. 1: ApiController_updateGraph
+        {
+            let url = BASE_URL + `/api/update-graph`;
+            let body = {"dsnpId": "2", "connections": {"data": [
+                {
+                    "dsnpId": "3",
+                    "privacyType": "public",
+                    "direction": "connectionTo",
+                    "connectionType": "follow"
+                }
+            ]}, "graphKeyPairs": []};
+            let params = {headers: {"Content-Type": "application/json", "Accept": "application/json"}};
+            let request = http.post(url, JSON.stringify(body), params);
+
+            check(request, {
+                "Got 201 response": (r) => r.status === 201,
+                "Repsonse contains referenceId": ({ body: bodyStr }) => {
+                    try {
+                        const body = JSON.parse(bodyStr);
+                        return Object.keys(body).includes("referenceId");
+                    } catch (e) {
+                        return false;
+                    }
+                }
+            });
+        }
     });
-  });
 
-  group('/api/graphs', () => {
-    // Request No. 1: ApiController_getGraphs
-    const url = `${BASE_URL}/api/graphs`;
-    // TODO: edit the parameters of the request body.
-    const body = { dsnpIds: 'list', privacyType: 'string', graphKeyPairs: 'list' };
-    const params = { headers: { 'Content-Type': 'application/json', Accept: 'application/json' } };
-    const request = http.put(url, JSON.stringify(body), params);
+    group("/api/graphs", () => {
+        const msaIds = ["2", "3", "4"];
 
-    check(request, {
-      'Graphs retrieved successfully': (r) => r.status === 200,
+        // Request No. 1: ApiController_getGraphs
+        {
+            let url = BASE_URL + `/api/graphs`;
+            let body = {"dsnpIds": msaIds, "privacyType": "public", "graphKeyPairs": []};
+            let params = {headers: {"Content-Type": "application/json", "Accept": "application/json"}};
+            let request = http.put(url, JSON.stringify(body), params);
+
+            check(request, {
+                "Got 200 response": (r) => r.status === 200,
+                "Response contained requested graphs": ({ body: bodyStr }) => {
+                    try {
+                    const body = JSON.parse(bodyStr);
+                    for (const msaId of msaIds) {
+                        if (!body.some((userGraph) =>userGraph.dsnpId === msaId)) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+                }
+            });
+        }
     });
-  });
 
-  group('/api/health', () => {
-    // Request No. 1: ApiController_health
-    const url = `${BASE_URL}/api/health`;
-    const request = http.get(url);
+    group("/api/health", () => {
 
-    check(request, {
-      'Service is healthy': (r) => r.status === 200,
+        // Request No. 1: ApiController_health
+        {
+            let url = BASE_URL + `/api/health`;
+            let request = http.get(url);
+
+            check(request, {
+                "Service is healthy": (r) => r.status === 200
+            });
+        }
     });
-  });
 
-  group('/api/watch-graphs', () => {
-    // Request No. 1: ApiController_watchGraphs
-    const url = `${BASE_URL}/api/watch-graphs`;
-    // TODO: edit the parameters of the request body.
-    const body = { dsnpIds: 'list', webhookEndpoint: 'string' };
-    const params = { headers: { 'Content-Type': 'application/json', Accept: 'application/json' } };
-    const request = http.put(url, JSON.stringify(body), params);
+    group("/api/watch-graphs", () => {
 
-    check(request, {
-      'Successfully started watching graphs': (r) => r.status === 200,
+        // Request No. 1: ApiController_watchGraphs
+        {
+            let url = BASE_URL + `/api/watch-graphs`;
+            let body = {"dsnpIds": ["2"], "webhookEndpoint": "http://localhost:3000/webhook"};
+            let params = {headers: {"Content-Type": "application/json", "Accept": "application/json"}};
+            let request = http.put(url, JSON.stringify(body), params);
+
+            check(request, {
+                "Got 200 response": (r) => r.status === 200,
+                "Response body is correct": ({ body }) => body === JSON.stringify({ status: 200, data: "Successfully started watching graphs" }),
+            });
+        }
     });
-  });
+
 }
