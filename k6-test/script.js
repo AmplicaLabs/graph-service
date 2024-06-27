@@ -12,7 +12,7 @@
 
 
 import http from "k6/http";
-import { group, check, sleep } from "k6";
+import { group, check } from "k6";
 
 export const options = {
   vus: 100,
@@ -31,7 +31,6 @@ const BASE_URL = "http://localhost:3000";
 // You might want to edit the value of this variable or remove calls to the sleep function on the script.
 const SLEEP_DURATION = 0.1;
 // Global variables should be initialized.
-
 
 export default function() {
     group("/api/update-graph", () => {
