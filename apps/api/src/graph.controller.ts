@@ -5,7 +5,7 @@ import { GraphChangeRepsonseDto, GraphsQueryParamsDto, ProviderGraphDto, UserGra
 import { WatchGraphsDto } from '../../../libs/common/src/dtos/watch-graphs.dto';
 
 @Controller('v1')
-@ApiTags('graph')
+@ApiTags('v1/graph')
 export class GraphController {
   private readonly logger: Logger;
 
