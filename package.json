@@ -27,7 +27,7 @@
     "chain-setup": "tsx ./test-setup/main.ts",
     "clean": "rm -Rf dist",
     "lint": "eslint \"{apps,libs}/**/*.ts\"",
-    "lint:fix": "eslint \"{apps,libs}/**/*.ts\" --fix",
+    "format": "eslint \"{apps,libs}/**/*.ts\" --fix",
     "test": "jest  --coverage --verbose",
     "test:e2e": "set -a ; . .env ; jest --config ./apps/api/test/jest-e2e.json --detectOpenHandles"
   },
