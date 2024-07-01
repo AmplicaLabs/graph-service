@@ -25,7 +25,7 @@ export class WebhooksControllerV1 {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get all registered webhooks for a specific MSA ID' })
   @ApiOkResponse({ description: 'Retrieved all registered webhooks for the given MSA ID' })
-  @ApiParam({ name: 'msaId', example: '2', type: String, description: 'MSA ID for which to request registered webhooks '})
+  @ApiParam({ name: 'msaId', example: '2', type: String, description: 'MSA ID for which to request registered webhooks ' })
   async getWebhooksForMsa(@Param('msaId') msaId: string): Promise<string[]> {
     return this.apiService.getWebhooksForMsa(msaId);
   }
