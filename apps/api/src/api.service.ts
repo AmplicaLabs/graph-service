@@ -49,7 +49,6 @@ export class ApiService implements BeforeApplicationShutdown {
 
   beforeApplicationShutdown(_signal?: string | undefined) {
     try {
-      // this.redis.del(QueueConstants.REDIS_WATCHER_PREFIX);
       this.redis.del(QueueConstants.DEBOUNCER_CACHE_KEY);
       this.redis.del(QueueConstants.LAST_PROCESSED_DSNP_ID_KEY);
       this.logger.log('Cleanup on shutdown completed.');
