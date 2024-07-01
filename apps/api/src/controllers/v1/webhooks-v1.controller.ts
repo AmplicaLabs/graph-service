@@ -25,6 +25,7 @@ export class WebhooksControllerV1 {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get all registered webhooks for a specific MSA ID' })
   @ApiOkResponse({ description: 'Retrieved all registered webhooks for the given MSA ID' })
+  @ApiParam({ name: 'msaId', example: '2', type: String, description: 'MSA ID for which to request registered webhooks '})
   async getWebhooksForMsa(@Param('msaId') msaId: string): Promise<string[]> {
     return this.apiService.getWebhooksForMsa(msaId);
   }
@@ -33,6 +34,7 @@ export class WebhooksControllerV1 {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get all webhooks registered to the specified URL' })
   @ApiOkResponse({ description: 'Retrieved all webhooks registered to the specified URL' })
+  @ApiQuery({ name: 'url', type: String, example: 'http://localhost/webhook', description: 'URL for which to fetch all watched MSAs' })
   async getWebhooksForUrl(@Query('url') url: string): Promise<string[]> {
     return this.apiService.getWatchedGraphsForUrl(url);
   }
@@ -68,7 +70,7 @@ export class WebhooksControllerV1 {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete all webhooks registered for a specific MSA' })
   @ApiOkResponse({ description: 'Removed all registered webhooks for the specified MSA' })
-  @ApiParam({ name: 'msaId', type: String })
+  @ApiParam({ name: 'msaId', type: String, example: '2', description: 'MSA for which to remove all webhook registrations' })
   deleteWebhooksForMsa(@Param('msaId') msaId: string): Promise<void> {
     return this.apiService.deleteWebhooksForUser(msaId);
   }
@@ -77,7 +79,7 @@ export class WebhooksControllerV1 {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete all MSA webhooks registered with the given URL' })
   @ApiOkResponse({ description: 'Removed all webhooks registered to the specified URL' })
-  @ApiQuery({ name: 'url', type: String })
+  @ApiQuery({ name: 'url', type: String, example: 'http://localhost/webhook', description: 'URL for which to un-watch all MSAs' })
   deleteAllWebhooksForUrl(@Query('url') url: string): Promise<void> {
     return this.apiService.deleteWebhooksForUrl(url);
   }

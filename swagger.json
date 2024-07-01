@@ -128,6 +128,8 @@
             "name": "msaId",
             "required": true,
             "in": "path",
+            "example": "2",
+            "description": "MSA ID for which to request registered webhooks ",
             "schema": {
               "type": "string"
             }
@@ -150,6 +152,8 @@
             "name": "msaId",
             "required": true,
             "in": "path",
+            "example": "2",
+            "description": "MSA for which to remove all webhook registrations",
             "schema": {
               "type": "string"
             }
@@ -174,6 +178,8 @@
             "name": "url",
             "required": true,
             "in": "query",
+            "example": "http://localhost/webhook",
+            "description": "URL for which to fetch all watched MSAs",
             "schema": {
               "type": "string"
             }
@@ -196,6 +202,8 @@
             "name": "url",
             "required": true,
             "in": "query",
+            "example": "http://localhost/webhook",
+            "description": "URL for which to un-watch all MSAs",
             "schema": {
               "type": "string"
             }
@@ -312,10 +320,10 @@
           "dsnpIds": {
             "description": "Array of MSA IDs for which to query graphs",
             "example": [
-              2,
-              3,
-              4,
-              5
+              "2",
+              "3",
+              "4",
+              "5"
             ],
             "type": "array",
             "items": {
@@ -449,7 +457,7 @@
           "dsnpId": {
             "type": "string",
             "description": "MSA ID that owns the connections represented in this object",
-            "example": 2
+            "example": "2"
           },
           "connections": {
             "description": "Array of connections known to the Provider for ths MSA referenced in this object",
